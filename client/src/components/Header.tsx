@@ -1,6 +1,7 @@
 import { Briefcase } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 interface HeaderProps {
     /** User type: 'worker', 'company', or undefined for not logged in */
@@ -11,7 +12,32 @@ interface HeaderProps {
     navItems?: Array<{ label: string; href: string; variant?: "default" | "ghost" | "outline" }>;
 }
 
-export default function Header({ userType, showNav = true, navItems }: HeaderProps) {
+export default function Header({ userType: propUserType, showNav = true, navItems }: HeaderProps) {
+    const [detectedUserType, setDetectedUserType] = useState<"worker" | "company" | undefined>(propUserType);
+
+    useEffect(() => {
+        // If userType is not provided as prop, detect from localStorage
+        if (!propUserType) {
+            const demoUserStr = localStorage.getItem("demo-user");
+            if (demoUserStr) {
+                try {
+                    const demoUser = JSON.parse(demoUserStr);
+                    if (demoUser.role === "worker") {
+                        setDetectedUserType("worker");
+                    } else if (demoUser.role === "company_admin") {
+                        setDetectedUserType("company");
+                    }
+                } catch (e) {
+                    console.error("Error parsing demo user:", e);
+                }
+            }
+        } else {
+            setDetectedUserType(propUserType);
+        }
+    }, [propUserType]);
+
+    const userType = detectedUserType;
+
     // Determine home link based on user type
     const homeLink = userType === "worker"
         ? "/worker/dashboard"
