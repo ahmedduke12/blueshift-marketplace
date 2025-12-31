@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Briefcase, CheckCircle2, XCircle, Clock, User, MapPin, DollarSign, Calendar } from "lucide-react";
 import { Link } from "wouter";
+import Header from "@/components/Header";
 
 export default function ApprovalDashboard() {
     const { user, loading } = useAuth();
@@ -86,22 +87,7 @@ export default function ApprovalDashboard() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <Briefcase className="w-6 h-6 text-primary" />
-                            <span className="text-xl font-bold">BlueShift</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link href="/company/dashboard">
-                                <Button variant="ghost">Dashboard</Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header userType="company" />
 
             <main className="container mx-auto px-4 py-8">
                 {/* Page Header */}

@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Briefcase, User, Award, Save, Plus } from "lucide-react";
+import { User, Award, Save, Plus } from "lucide-react";
 import { Link } from "wouter";
+import Header from "@/components/Header";
 
 export default function WorkerProfile() {
     const [isEditing, setIsEditing] = useState(true); // Start in edit mode for new users
@@ -53,25 +54,7 @@ export default function WorkerProfile() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <Briefcase className="w-6 h-6 text-primary" />
-                            <span className="text-xl font-bold">BlueShift</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link href="/worker/dashboard">
-                                <Button variant="ghost">Dashboard</Button>
-                            </Link>
-                            <Link href="/jobs">
-                                <Button variant="ghost">Browse Jobs</Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header userType="worker" />
 
             <main className="container mx-auto px-4 py-8 max-w-4xl">
                 {/* Page Header */}

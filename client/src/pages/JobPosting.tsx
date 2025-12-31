@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Briefcase, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import Header from "@/components/Header";
 
 const steps = [
     { id: 1, name: "Basic Info", description: "Job title and description" },
@@ -107,25 +108,7 @@ export default function JobPosting() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <Briefcase className="w-6 h-6 text-primary" />
-                            <span className="text-xl font-bold">BlueShift</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link href="/company/dashboard">
-                                <Button variant="ghost">
-                                    <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Back to Dashboard
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header userType="company" />
 
             <main className="container mx-auto px-4 py-8 max-w-4xl">
                 {/* Page Header */}
