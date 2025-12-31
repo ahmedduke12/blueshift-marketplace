@@ -1,4 +1,4 @@
-import { Handler } from "@netlify/functions";
+import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
 import serverless from "serverless-http";
@@ -19,4 +19,9 @@ app.use(
     })
 );
 
-export const handler: Handler = serverless(app);
+const serverlessHandler = serverless(app);
+
+export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+    const result = await serverlessHandler(event, context);
+    return result as any;
+};
