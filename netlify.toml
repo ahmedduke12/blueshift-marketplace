@@ -11,7 +11,12 @@
   external_node_modules = ["@trpc/server", "express", "drizzle-orm", "postgres"]
 
 [[redirects]]
-  from = "/api/*"
+  from = "/api/trpc/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/trpc"
   to = "/.netlify/functions/api"
   status = 200
 
