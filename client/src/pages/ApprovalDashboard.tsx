@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,81 +19,88 @@ import { toast } from "sonner";
 import { Briefcase, CheckCircle2, XCircle, Clock, User, MapPin, DollarSign, Calendar } from "lucide-react";
 import { Link } from "wouter";
 
-// Mock approval requests
-const mockRequests = [
-    {
-        id: 1,
-        workerName: "Ahmed Mohammed",
-        workerPhone: "+966 50 123 4567",
-        jobTitle: "Construction Helper",
-        companyName: "ABC Construction Co.",
-        wageAmount: 2500,
-        wageType: "daily",
-        startDate: "2024-02-01",
-        endDate: "2024-03-01",
-        workLocation: "Riyadh Construction Site",
-        status: "pending",
-        requestedAt: "2024-01-25T10:30:00"
-    },
-    {
-        id: 2,
-        workerName: "Mohammed Ali",
-        workerPhone: "+966 55 987 6543",
-        jobTitle: "Warehouse Assistant",
-        companyName: "Logistics Plus",
-        wageAmount: 2000,
-        wageType: "daily",
-        startDate: "2024-02-05",
-        endDate: "2024-04-05",
-        workLocation: "Dammam Warehouse",
-        status: "pending",
-        requestedAt: "2024-01-26T14:15:00"
-    }
-];
-
-const mockHistory = [
-    {
-        id: 3,
-        workerName: "Khalid Hassan",
-        jobTitle: "Delivery Driver",
-        companyName: "Fast Delivery Services",
-        wageAmount: 180,
-        wageType: "hourly",
-        status: "approved",
-        decidedAt: "2024-01-20T09:00:00",
-        notes: "Approved for weekend work only"
-    },
-    {
-        id: 4,
-        workerName: "Salem Ahmed",
-        jobTitle: "Security Guard",
-        companyName: "SecureGuard Inc.",
-        wageAmount: 3000,
-        wageType: "fixed",
-        status: "declined",
-        decidedAt: "2024-01-18T16:30:00",
-        notes: "Conflicts with primary employment hours"
-    }
-];
-
 export default function ApprovalDashboard() {
+    const { user, loading } = useAuth();
     const [selectedRequest, setSelectedRequest] = useState<any>(null);
     const [notes, setNotes] = useState("");
-    const [requests, setRequests] = useState(mockRequests);
 
-    const handleApprove = (requestId: number) => {
-        setRequests(requests.filter(r => r.id !== requestId));
-        toast.success("Request approved successfully!");
-        setSelectedRequest(null);
-        setNotes("");
+    // Get company for current user (assuming they're a company admin)
+    const { data: companies } = trpc.company.list.useQuery(undefined, {
+        enabled: !!user
+    });
+    const sponsorCompanyId = companies?.[0]?.id;
+
+    // Fetch pending approvals
+    const { data: pendingApprovals, refetch } = trpc.approval.getPendingApprovals.useQuery(
+        { sponsorCompanyId: sponsorCompanyId! },
+        { enabled: !!sponsorCompanyId }
+    );
+
+    const approveAssignment = trpc.approval.approve.useMutation({
+        onSuccess: () => {
+            toast.success("Request approved successfully!");
+            setSelectedRequest(null);
+            setNotes("");
+            refetch();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to approve request");
+        }
+    });
+
+    const declineAssignment = trpc.approval.decline.useMutation({
+        onSuccess: () => {
+            toast.success("Request declined");
+            setSelectedRequest(null);
+            setNotes("");
+            refetch();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to decline request");
+        }
+    });
+
+    const handleApprove = (assignmentId: number) => {
+        approveAssignment.mutate({
+            assignmentId,
+            notes: notes || undefined
+        });
     };
 
-    const handleDecline = (requestId: number) => {
-        setRequests(requests.filter(r => r.id !== requestId));
-        toast.success("Request declined");
-        setSelectedRequest(null);
-        setNotes("");
+    const handleDecline = (assignmentId: number) => {
+        declineAssignment.mutate({
+            assignmentId,
+            notes: notes || undefined
+        });
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Card className="max-w-md">
+                    <CardHeader>
+                        <CardTitle>Authentication Required</CardTitle>
+                        <CardDescription>Please sign in to access the approval dashboard</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <Link href="/">Go to Home</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    const pendingCount = pendingApprovals?.length || 0;
 
     return (
         <div className="min-h-screen bg-background">
@@ -127,7 +136,7 @@ export default function ApprovalDashboard() {
                             <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{requests.length}</div>
+                            <div className="text-2xl font-bold">{pendingCount}</div>
                             <p className="text-xs text-muted-foreground">Awaiting your decision</p>
                         </CardContent>
                     </Card>
@@ -138,8 +147,8 @@ export default function ApprovalDashboard() {
                             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">8</div>
-                            <p className="text-xs text-muted-foreground">+2 from last month</p>
+                            <div className="text-2xl font-bold">-</div>
+                            <p className="text-xs text-muted-foreground">Coming soon</p>
                         </CardContent>
                     </Card>
 
@@ -149,8 +158,8 @@ export default function ApprovalDashboard() {
                             <XCircle className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">2</div>
-                            <p className="text-xs text-muted-foreground">-1 from last month</p>
+                            <div className="text-2xl font-bold">-</div>
+                            <p className="text-xs text-muted-foreground">Coming soon</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -159,7 +168,7 @@ export default function ApprovalDashboard() {
                 <Tabs defaultValue="pending" className="space-y-4">
                     <TabsList>
                         <TabsTrigger value="pending">
-                            Pending ({requests.length})
+                            Pending ({pendingCount})
                         </TabsTrigger>
                         <TabsTrigger value="history">
                             History
@@ -168,15 +177,15 @@ export default function ApprovalDashboard() {
 
                     {/* Pending Requests */}
                     <TabsContent value="pending" className="space-y-4">
-                        {requests.length > 0 ? (
-                            requests.map((request) => (
-                                <Card key={request.id}>
+                        {pendingApprovals && pendingApprovals.length > 0 ? (
+                            pendingApprovals.map((approval: any) => (
+                                <Card key={approval.id}>
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <CardTitle className="text-lg">{request.workerName}</CardTitle>
+                                                <CardTitle className="text-lg">Assignment Request #{approval.assignmentId}</CardTitle>
                                                 <CardDescription>
-                                                    Requested {new Date(request.requestedAt).toLocaleDateString()}
+                                                    Requested {new Date(approval.createdAt || Date.now()).toLocaleDateString()}
                                                 </CardDescription>
                                             </div>
                                             <Badge variant="outline">
@@ -186,31 +195,14 @@ export default function ApprovalDashboard() {
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="font-medium">{request.jobTitle}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <User className="w-4 h-4" />
-                                                    <span>{request.companyName}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <MapPin className="w-4 h-4" />
-                                                    <span>{request.workLocation}</span>
-                                                </div>
+                                        <div className="space-y-2 mb-4">
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Briefcase className="w-4 h-4 text-muted-foreground" />
+                                                <span className="font-medium">Assignment ID: {approval.assignmentId}</span>
                                             </div>
-
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <DollarSign className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="font-medium">{request.wageAmount} SAR / {request.wageType}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <Calendar className="w-4 h-4" />
-                                                    <span>{new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}</span>
-                                                </div>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <User className="w-4 h-4" />
+                                                <span>Sponsor Company ID: {approval.sponsorCompanyId}</span>
                                             </div>
                                         </div>
 
@@ -220,7 +212,7 @@ export default function ApprovalDashboard() {
                                                     <Button
                                                         variant="default"
                                                         className="flex-1"
-                                                        onClick={() => setSelectedRequest(request)}
+                                                        onClick={() => setSelectedRequest(approval)}
                                                     >
                                                         <CheckCircle2 className="w-4 h-4 mr-2" />
                                                         Approve
@@ -230,7 +222,7 @@ export default function ApprovalDashboard() {
                                                     <DialogHeader>
                                                         <DialogTitle>Approve Request</DialogTitle>
                                                         <DialogDescription>
-                                                            Approve {request.workerName}'s request to work at {request.companyName}
+                                                            Approve assignment request #{approval.assignmentId}
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div className="space-y-4">
@@ -246,10 +238,11 @@ export default function ApprovalDashboard() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Button
-                                                                onClick={() => handleApprove(request.id)}
+                                                                onClick={() => handleApprove(approval.assignmentId)}
                                                                 className="flex-1"
+                                                                disabled={approveAssignment.isPending}
                                                             >
-                                                                Confirm Approval
+                                                                {approveAssignment.isPending ? "Approving..." : "Confirm Approval"}
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -261,7 +254,7 @@ export default function ApprovalDashboard() {
                                                     <Button
                                                         variant="destructive"
                                                         className="flex-1"
-                                                        onClick={() => setSelectedRequest(request)}
+                                                        onClick={() => setSelectedRequest(approval)}
                                                     >
                                                         <XCircle className="w-4 h-4 mr-2" />
                                                         Decline
@@ -271,7 +264,7 @@ export default function ApprovalDashboard() {
                                                     <DialogHeader>
                                                         <DialogTitle>Decline Request</DialogTitle>
                                                         <DialogDescription>
-                                                            Decline {request.workerName}'s request to work at {request.companyName}
+                                                            Decline assignment request #{approval.assignmentId}
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div className="space-y-4">
@@ -288,10 +281,11 @@ export default function ApprovalDashboard() {
                                                         <div className="flex gap-2">
                                                             <Button
                                                                 variant="destructive"
-                                                                onClick={() => handleDecline(request.id)}
+                                                                onClick={() => handleDecline(approval.assignmentId)}
                                                                 className="flex-1"
+                                                                disabled={declineAssignment.isPending}
                                                             >
-                                                                Confirm Decline
+                                                                {declineAssignment.isPending ? "Declining..." : "Confirm Decline"}
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -316,50 +310,15 @@ export default function ApprovalDashboard() {
 
                     {/* History */}
                     <TabsContent value="history" className="space-y-4">
-                        {mockHistory.map((item) => (
-                            <Card key={item.id}>
-                                <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <CardTitle className="text-lg">{item.workerName}</CardTitle>
-                                            <CardDescription>
-                                                Decided {new Date(item.decidedAt).toLocaleDateString()}
-                                            </CardDescription>
-                                        </div>
-                                        <Badge variant={item.status === 'approved' ? 'default' : 'destructive'}>
-                                            {item.status === 'approved' ? (
-                                                <><CheckCircle2 className="w-3 h-3 mr-1" /> Approved</>
-                                            ) : (
-                                                <><XCircle className="w-3 h-3 mr-1" /> Declined</>
-                                            )}
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Briefcase className="w-4 h-4 text-muted-foreground" />
-                                            <span className="font-medium">{item.jobTitle}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <User className="w-4 h-4" />
-                                            <span>{item.companyName}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <DollarSign className="w-4 h-4 text-muted-foreground" />
-                                            <span>{item.wageAmount} SAR / {item.wageType}</span>
-                                        </div>
-                                    </div>
-
-                                    {item.notes && (
-                                        <div className="p-3 bg-muted rounded-lg">
-                                            <p className="text-sm font-medium mb-1">Notes:</p>
-                                            <p className="text-sm text-muted-foreground">{item.notes}</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ))}
+                        <Card>
+                            <CardContent className="text-center py-12">
+                                <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                                <h3 className="text-lg font-medium mb-2">History coming soon</h3>
+                                <p className="text-muted-foreground">
+                                    View your past approval decisions here
+                                </p>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </main>

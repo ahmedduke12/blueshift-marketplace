@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,7 @@ const steps = [
 ];
 
 export default function JobPosting() {
+    const { user } = useAuth();
     const [, setLocation] = useLocation();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState({
@@ -31,8 +34,26 @@ export default function JobPosting() {
         endDate: "",
         workingHours: "",
         wageAmount: "",
-        wageType: "daily",
+        wageType: "daily" as "hourly" | "daily" | "fixed",
         requirements: ""
+    });
+
+    // Get company for current user
+    const { data: companies } = trpc.company.list.useQuery(undefined, {
+        enabled: !!user
+    });
+    const companyId = companies?.[0]?.id;
+
+    const createJob = trpc.job.create.useMutation({
+        onSuccess: () => {
+            toast.success("Job posted successfully!");
+            setTimeout(() => {
+                setLocation("/company/dashboard");
+            }, 1500);
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to post job");
+        }
     });
 
     const handleNext = () => {
@@ -48,10 +69,27 @@ export default function JobPosting() {
     };
 
     const handleSubmit = () => {
-        toast.success("Job posted successfully!");
-        setTimeout(() => {
-            setLocation("/company/dashboard");
-        }, 1500);
+        if (!companyId || !user) {
+            toast.error("Please sign in as a company admin to post jobs");
+            return;
+        }
+
+        createJob.mutate({
+            companyId,
+            title: formData.title,
+            description: formData.description,
+            sector: formData.sector || undefined,
+            workLocation: formData.workLocation || undefined,
+            city: formData.city || undefined,
+            region: formData.region || undefined,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            workingHours: formData.workingHours || undefined,
+            numberOfWorkers: formData.numberOfWorkers,
+            wageAmount: formData.wageAmount,
+            wageType: formData.wageType,
+            postedById: user.id
+        });
     };
 
     const isStepValid = () => {
@@ -105,8 +143,8 @@ export default function JobPosting() {
                             <div key={step.id} className="flex items-center flex-1">
                                 <div className="flex flex-col items-center flex-1">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${currentStep > step.id ? 'bg-primary border-primary text-primary-foreground' :
-                                            currentStep === step.id ? 'border-primary text-primary' :
-                                                'border-muted text-muted-foreground'
+                                        currentStep === step.id ? 'border-primary text-primary' :
+                                            'border-muted text-muted-foreground'
                                         }`}>
                                         {currentStep > step.id ? <Check className="w-5 h-5" /> : step.id}
                                     </div>

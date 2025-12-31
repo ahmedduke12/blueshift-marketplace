@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,32 +12,70 @@ import { toast } from "sonner";
 import { Briefcase, User, MapPin, Phone, Mail, Calendar, Award, Save } from "lucide-react";
 import { Link } from "wouter";
 
-// Mock worker data
-const mockWorker = {
-    name: "Ahmed Mohammed",
-    email: "ahmed.mohammed@example.com",
-    phone: "+966 50 123 4567",
-    nationality: "Saudi Arabia",
-    city: "Riyadh",
-    region: "Central",
-    dateOfBirth: "1990-05-15",
-    iqamaNumber: "2123456789",
-    skills: ["Construction", "Carpentry", "Electrical Work"],
-    experience: "5 years in construction industry",
-    availability: "Weekends and after 5 PM on weekdays",
-    certifications: ["Safety Training Certificate", "Forklift Operator License"],
-    completedJobs: 12,
-    rating: 4.8
-};
-
 export default function WorkerProfile() {
+    const { user, loading } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(mockWorker);
+
+    const { data: worker, refetch } = trpc.worker.getProfile.useQuery(undefined, {
+        enabled: !!user
+    });
+
+    const [formData, setFormData] = useState({
+        primarySkill: worker?.primarySkill || "",
+        skills: worker?.skills || [],
+        experience: worker?.experience || 0,
+        isAvailable: worker?.isAvailable ?? true,
+    });
+
+    const updateWorker = trpc.worker.update.useMutation({
+        onSuccess: () => {
+            toast.success("Profile updated successfully!");
+            setIsEditing(false);
+            refetch();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to update profile");
+        }
+    });
 
     const handleSave = () => {
-        toast.success("Profile updated successfully!");
-        setIsEditing(false);
+        updateWorker.mutate(formData);
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user || !worker) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Card className="max-w-md">
+                    <CardHeader>
+                        <CardTitle>Worker Profile Not Found</CardTitle>
+                        <CardDescription>Please create a worker profile first</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <Link href="/">Go to Home</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    // Calculate stats from assignments
+    const { data: assignments } = trpc.assignment.list.useQuery(
+        { workerId: worker.id },
+        { enabled: !!worker.id }
+    );
+
+    const completedJobs = assignments?.filter(a => a.status === 'completed').length || 0;
+    const rating = 4.8; // TODO: Calculate from reviews when implemented
 
     return (
         <div className="min-h-screen bg-background">
@@ -71,9 +111,9 @@ export default function WorkerProfile() {
                     ) : (
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                            <Button onClick={handleSave}>
+                            <Button onClick={handleSave} disabled={updateWorker.isPending}>
                                 <Save className="w-4 h-4 mr-2" />
-                                Save Changes
+                                {updateWorker.isPending ? "Saving..." : "Save Changes"}
                             </Button>
                         </div>
                     )}
@@ -84,7 +124,7 @@ export default function WorkerProfile() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-3xl font-bold">{mockWorker.completedJobs}</p>
+                                <p className="text-3xl font-bold">{completedJobs}</p>
                                 <p className="text-sm text-muted-foreground">Completed Jobs</p>
                             </div>
                         </CardContent>
@@ -92,7 +132,7 @@ export default function WorkerProfile() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-3xl font-bold">{mockWorker.rating} ⭐</p>
+                                <p className="text-3xl font-bold">{rating} ⭐</p>
                                 <p className="text-sm text-muted-foreground">Average Rating</p>
                             </div>
                         </CardContent>
@@ -100,7 +140,7 @@ export default function WorkerProfile() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-3xl font-bold">{mockWorker.skills.length}</p>
+                                <p className="text-3xl font-bold">{worker.skills?.length || 0}</p>
                                 <p className="text-sm text-muted-foreground">Skills</p>
                             </div>
                         </CardContent>
@@ -118,90 +158,24 @@ export default function WorkerProfile() {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    disabled={!isEditing}
-                                />
+                                <Label>Iqama Number</Label>
+                                <Input value={worker.iqamaNumber || "N/A"} disabled />
                             </div>
                             <div>
-                                <Label htmlFor="nationality">Nationality</Label>
-                                <Input
-                                    id="nationality"
-                                    value={formData.nationality}
-                                    onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                                    disabled={!isEditing}
-                                />
+                                <Label>Nationality</Label>
+                                <Input value={worker.nationality || "N/A"} disabled />
                             </div>
                             <div>
-                                <Label htmlFor="iqama">Iqama Number</Label>
+                                <Label>Date of Birth</Label>
                                 <Input
-                                    id="iqama"
-                                    value={formData.iqamaNumber}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="dob">Date of Birth</Label>
-                                <Input
-                                    id="dob"
                                     type="date"
-                                    value={formData.dateOfBirth}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Contact Information */}
-                <Card className="mb-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Phone className="w-5 h-5" />
-                            Contact Information
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    disabled={!isEditing}
+                                    value={worker.dateOfBirth ? new Date(worker.dateOfBirth).toISOString().split('T')[0] : ""}
+                                    disabled
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="phone">Phone Number</Label>
-                                <Input
-                                    id="phone"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="city">City</Label>
-                                <Input
-                                    id="city"
-                                    value={formData.city}
-                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                    disabled={!isEditing}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="region">Region</Label>
-                                <Input
-                                    id="region"
-                                    value={formData.region}
-                                    onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                                    disabled={!isEditing}
-                                />
+                                <Label>Visa Type</Label>
+                                <Input value={worker.visaType || "N/A"} disabled />
                             </div>
                         </div>
                     </CardContent>
@@ -217,72 +191,83 @@ export default function WorkerProfile() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label htmlFor="skills">Skills</Label>
+                            <Label htmlFor="primarySkill">Primary Skill</Label>
+                            <Input
+                                id="primarySkill"
+                                value={isEditing ? formData.primarySkill : worker.primarySkill || "N/A"}
+                                onChange={(e) => setFormData({ ...formData, primarySkill: e.target.value })}
+                                disabled={!isEditing}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                            <Label>Additional Skills</Label>
                             <div className="flex flex-wrap gap-2 mt-2">
-                                {formData.skills.map((skill, index) => (
+                                {worker.skills?.map((skill, index) => (
                                     <Badge key={index} variant="secondary">{skill}</Badge>
                                 ))}
+                                {(!worker.skills || worker.skills.length === 0) && (
+                                    <p className="text-sm text-muted-foreground">No additional skills listed</p>
+                                )}
                             </div>
-                            {isEditing && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Click to add or remove skills
-                                </p>
-                            )}
                         </div>
 
                         <Separator />
 
                         <div>
-                            <Label htmlFor="experience">Work Experience</Label>
-                            <Textarea
+                            <Label htmlFor="experience">Years of Experience</Label>
+                            <Input
                                 id="experience"
-                                value={formData.experience}
-                                onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                                type="number"
+                                value={isEditing ? formData.experience : worker.experience || 0}
+                                onChange={(e) => setFormData({ ...formData, experience: parseInt(e.target.value) })}
                                 disabled={!isEditing}
-                                rows={4}
                                 className="mt-2"
                             />
                         </div>
 
                         <Separator />
 
-                        <div>
-                            <Label htmlFor="availability">Availability</Label>
-                            <Textarea
-                                id="availability"
-                                value={formData.availability}
-                                onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                                disabled={!isEditing}
-                                rows={3}
-                                className="mt-2"
-                            />
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label>Availability Status</Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    {worker.isAvailable ? "Available for work" : "Not available"}
+                                </p>
+                            </div>
+                            <Badge variant={worker.isAvailable ? "default" : "secondary"}>
+                                {worker.isAvailable ? "Available" : "Unavailable"}
+                            </Badge>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Certifications */}
+                {/* Visa Information */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Award className="w-5 h-5" />
-                            Certifications
+                            <Calendar className="w-5 h-5" />
+                            Visa Information
                         </CardTitle>
-                        <CardDescription>Your professional certifications and licenses</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            {formData.certifications.map((cert, index) => (
-                                <div key={index} className="flex items-center gap-2 p-3 border rounded-lg">
-                                    <Award className="w-4 h-4 text-primary" />
-                                    <span>{cert}</span>
-                                </div>
-                            ))}
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label>Visa Type</Label>
+                                <p className="text-sm mt-1">{worker.visaType || "N/A"}</p>
+                            </div>
+                            <div>
+                                <Label>Visa Expiry Date</Label>
+                                <p className="text-sm mt-1">
+                                    {worker.visaExpiryDate
+                                        ? new Date(worker.visaExpiryDate).toLocaleDateString()
+                                        : "N/A"}
+                                </p>
+                            </div>
                         </div>
-                        {isEditing && (
-                            <Button variant="outline" className="w-full mt-4">
-                                Add Certification
-                            </Button>
-                        )}
                     </CardContent>
                 </Card>
             </main>
