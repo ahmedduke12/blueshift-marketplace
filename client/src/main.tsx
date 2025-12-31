@@ -37,10 +37,19 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+const getApiUrl = () => {
+  // In production, use absolute URL
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api/trpc`;
+  }
+  // Fallback for SSR
+  return '/api/trpc';
+};
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: getApiUrl(),
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
