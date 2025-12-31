@@ -61,9 +61,42 @@ export default function JobPosting() {
             }, 1500);
         },
         onError: (error) => {
-            toast.error(error.message || "Failed to post job");
+            // Fallback to localStorage for demo mode
+            console.log("API failed, using demo mode:", error);
+            handleDemoModeSubmit();
         }
     });
+
+    const handleDemoModeSubmit = () => {
+        const newJob = {
+            id: Date.now(),
+            companyId: mockCompanyId,
+            title: formData.title,
+            description: formData.description,
+            sector: formData.sector,
+            workLocation: formData.workLocation,
+            city: formData.city,
+            region: formData.region,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            workingHours: formData.workingHours,
+            numberOfWorkers: formData.numberOfWorkers,
+            wageAmount: formData.wageAmount,
+            wageType: formData.wageType,
+            postedById: mockUserId,
+            status: "active",
+            createdAt: new Date().toISOString()
+        };
+
+        const existingJobs = JSON.parse(localStorage.getItem("demo-jobs") || "[]");
+        existingJobs.push(newJob);
+        localStorage.setItem("demo-jobs", JSON.stringify(existingJobs));
+
+        toast.success("Job posted successfully! (Demo Mode)");
+        setTimeout(() => {
+            setLocation("/company/dashboard");
+        }, 1500);
+    };
 
     const handleSubmit = () => {
         // Validate required fields

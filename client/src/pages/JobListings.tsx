@@ -15,9 +15,13 @@ export default function JobListings() {
     const [wageTypeFilter, setWageTypeFilter] = useState<string>("all");
     const [cityFilter, setCityFilter] = useState<string>("all");
 
-    const { data: jobs, isLoading } = trpc.job.list.useQuery({
+    const { data: apiJobs, isLoading } = trpc.job.list.useQuery({
         status: "active"
     });
+
+    // Merge API jobs with localStorage demo jobs
+    const demoJobs = JSON.parse(localStorage.getItem("demo-jobs") || "[]");
+    const jobs = [...(apiJobs || []), ...demoJobs];
 
     const filteredJobs = jobs?.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
