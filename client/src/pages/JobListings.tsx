@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Briefcase, MapPin, DollarSign, Calendar, Search, Filter } from "lucide-react";
 import { Link } from "wouter";
+import Header from "@/components/Header";
 
 export default function JobListings() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sectorFilter, setSectorFilter] = useState<string>("all");
     const [wageTypeFilter, setWageTypeFilter] = useState<string>("all");
+    const [cityFilter, setCityFilter] = useState<string>("all");
 
     const { data: jobs, isLoading } = trpc.job.list.useQuery({
         status: "active"
@@ -22,31 +24,17 @@ export default function JobListings() {
             job.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSector = sectorFilter === "all" || job.sector === sectorFilter;
         const matchesWageType = wageTypeFilter === "all" || job.wageType === wageTypeFilter;
+        const matchesCity = cityFilter === "all" || job.city === cityFilter;
 
-        return matchesSearch && matchesSector && matchesWageType;
+        return matchesSearch && matchesSector && matchesWageType && matchesCity;
     });
+
+    // Extract unique cities from jobs for filter
+    const cities = Array.from(new Set(jobs?.map(job => job.city).filter(Boolean))) as string[];
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <Briefcase className="w-6 h-6 text-primary" />
-                            <span className="text-xl font-bold">BlueShift</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link href="/worker/dashboard">
-                                <Button variant="ghost">Dashboard</Button>
-                            </Link>
-                            <Link href="/">
-                                <Button variant="ghost">Home</Button>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <Header />
 
             <main className="container mx-auto px-4 py-8">
                 {/* Page Header */}
@@ -64,7 +52,7 @@ export default function JobListings() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="relative">
                                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
@@ -86,6 +74,28 @@ export default function JobListings() {
                                     <SelectItem value="retail">Retail</SelectItem>
                                     <SelectItem value="logistics">Logistics</SelectItem>
                                     <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={cityFilter} onValueChange={setCityFilter}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Cities" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Cities</SelectItem>
+                                    {cities.length > 0 ? (
+                                        cities.map(city => (
+                                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <SelectItem value="Riyadh">Riyadh</SelectItem>
+                                            <SelectItem value="Jeddah">Jeddah</SelectItem>
+                                            <SelectItem value="Dammam">Dammam</SelectItem>
+                                            <SelectItem value="Mecca">Mecca</SelectItem>
+                                            <SelectItem value="Medina">Medina</SelectItem>
+                                        </>
+                                    )}
                                 </SelectContent>
                             </Select>
 
@@ -164,17 +174,18 @@ export default function JobListings() {
                             <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                             <h3 className="text-lg font-medium mb-2">No jobs found</h3>
                             <p className="text-muted-foreground mb-4">
-                                {searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all"
+                                {searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all" || cityFilter !== "all"
                                     ? "Try adjusting your filters"
                                     : "No jobs are currently available"}
                             </p>
-                            {(searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all") && (
+                            {(searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all" || cityFilter !== "all") && (
                                 <Button
                                     variant="outline"
                                     onClick={() => {
                                         setSearchTerm("");
                                         setSectorFilter("all");
                                         setWageTypeFilter("all");
+                                        setCityFilter("all");
                                     }}
                                 >
                                     Clear Filters
