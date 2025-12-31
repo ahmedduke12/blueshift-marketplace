@@ -158,7 +158,7 @@ export default function Home() {
                 ))}
               </ul>
               <Button size="lg" className="mt-8" asChild>
-                <a href={getLoginUrl()}>Join as Sponsor</a>
+                <Link href="/signup?tab=company">Join as Sponsor</Link>
               </Button>
             </div>
             <div className="relative">
@@ -201,7 +201,7 @@ export default function Home() {
                 ))}
               </ul>
               <Button size="lg" className="mt-8" asChild>
-                <a href={getLoginUrl()}>Join as Worker</a>
+                <Link href="/signup?tab=worker">Join as Worker</Link>
               </Button>
             </div>
           </div>
@@ -247,9 +247,9 @@ export default function Home() {
             Join BlueShift today and experience the future of compliant after-hours work.
           </p>
           <Button size="lg" variant="secondary" className="text-lg px-8" asChild>
-            <a href={getLoginUrl()}>
+            <Link href="/signup">
               Create Your Account <ArrowRight className="ml-2 w-5 h-5" />
-            </a>
+            </Link>
           </Button>
         </div>
       </section>

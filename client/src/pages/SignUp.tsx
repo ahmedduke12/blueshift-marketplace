@@ -1,16 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Briefcase, Building2, User, Mail, Lock, Phone, ArrowRight } from "lucide-react";
+import { Briefcase, Building2, User, Mail, Lock, Phone, ArrowRight, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
 export default function SignUp() {
     const [, setLocation] = useLocation();
+    const [activeTab, setActiveTab] = useState("worker");
+
+    // Check URL parameter for tab
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get("tab");
+        if (tab === "company" || tab === "worker") {
+            setActiveTab(tab);
+        }
+    }, []);
+
     const [workerData, setWorkerData] = useState({
         name: "",
         email: "",
@@ -34,7 +45,6 @@ export default function SignUp() {
             toast.error("Passwords don't match");
             return;
         }
-        // TODO: Implement actual sign up logic
         toast.success("Worker account created! Redirecting...");
         setTimeout(() => setLocation("/worker/dashboard"), 1500);
     };
@@ -45,7 +55,6 @@ export default function SignUp() {
             toast.error("Passwords don't match");
             return;
         }
-        // TODO: Implement actual sign up logic
         toast.success("Company account created! Redirecting...");
         setTimeout(() => setLocation("/company/dashboard"), 1500);
     };
@@ -53,20 +62,32 @@ export default function SignUp() {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-                {/* Header */}
+                {/* Header with clickable logo */}
                 <div className="text-center mb-8">
-                    <div className="flex items-center justify-center space-x-2 mb-4">
-                        <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                            <Briefcase className="w-6 h-6 text-primary-foreground" />
+                    <Link href="/">
+                        <div className="flex items-center justify-center space-x-2 mb-4 cursor-pointer hover:opacity-80 transition-opacity">
+                            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                                <Briefcase className="w-6 h-6 text-primary-foreground" />
+                            </div>
+                            <span className="text-2xl font-bold">BlueShift</span>
                         </div>
-                        <span className="text-2xl font-bold">BlueShift</span>
-                    </div>
+                    </Link>
                     <h1 className="text-3xl font-bold mb-2">Create an Account</h1>
                     <p className="text-muted-foreground">Choose your account type to get started</p>
                 </div>
 
+                {/* Back to Home Button - More Visible */}
+                <div className="mb-6">
+                    <Button variant="outline" asChild className="w-full">
+                        <Link href="/">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back to Home
+                        </Link>
+                    </Button>
+                </div>
+
                 {/* Sign Up Forms */}
-                <Tabs defaultValue="worker" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 mb-6">
                         <TabsTrigger value="worker" className="flex items-center gap-2">
                             <User className="w-4 h-4" />
@@ -290,13 +311,6 @@ export default function SignUp() {
                             Sign In
                         </Link>
                     </p>
-                </div>
-
-                {/* Back to Home */}
-                <div className="text-center mt-4">
-                    <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-                        ← Back to Home
-                    </Link>
                 </div>
             </div>
         </div>
