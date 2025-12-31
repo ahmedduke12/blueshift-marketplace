@@ -6,6 +6,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import CompanyDashboard from "./pages/CompanyDashboard";
+import WorkerDashboard from "./pages/WorkerDashboard";
+import JobListings from "./pages/JobListings";
+import JobDetails from "./pages/JobDetails";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -13,6 +16,9 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/company/dashboard"} component={CompanyDashboard} />
+      <Route path={"/worker/dashboard"} component={WorkerDashboard} />
+      <Route path={"/jobs"} component={JobListings} />
+      <Route path={"/jobs/:id"} component={JobDetails} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -30,7 +36,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
-        // switchable
+      // switchable
       >
         <TooltipProvider>
           <Toaster />
