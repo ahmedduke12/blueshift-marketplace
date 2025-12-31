@@ -31,24 +31,6 @@ export default function WorkerDashboard() {
         );
     }
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="max-w-md">
-                    <CardHeader>
-                        <CardTitle>Authentication Required</CardTitle>
-                        <CardDescription>Please sign in to access your dashboard</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild className="w-full">
-                            <Link href="/">Go to Home</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
     const stats = {
         activeJobs: assignments?.filter(a => a.status === 'active').length || 0,
         pendingApprovals: assignments?.filter(a => a.status === 'pending_sponsor_approval').length || 0,
@@ -81,8 +63,8 @@ export default function WorkerDashboard() {
             <main className="container mx-auto px-4 py-8">
                 {/* Welcome Section */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name || 'Worker'}!</h1>
-                    <p className="text-muted-foreground">Here's your activity overview</p>
+                    <h1 className="text-3xl font-bold mb-2">Welcome back{user?.name ? `, ${user.name}` : ''}!</h1>
+                    <p className="text-muted-foreground">{user ? "Here's your activity overview" : "Demo Mode - Viewing sample data"}</p>
                 </div>
 
                 {/* Stats Grid */}

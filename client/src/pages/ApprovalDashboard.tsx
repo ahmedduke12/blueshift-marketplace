@@ -82,24 +82,6 @@ export default function ApprovalDashboard() {
         );
     }
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="max-w-md">
-                    <CardHeader>
-                        <CardTitle>Authentication Required</CardTitle>
-                        <CardDescription>Please sign in to access the approval dashboard</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild className="w-full">
-                            <Link href="/">Go to Home</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
-
     const pendingCount = pendingApprovals?.length || 0;
 
     return (
