@@ -450,7 +450,7 @@ export const appRouter = router({
   // ============================================================================
 
   job: router({
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         companyId: z.number(),
         title: z.string(),
@@ -459,24 +459,26 @@ export const appRouter = router({
         descriptionAr: z.string().optional(),
         requiredSkills: z.array(z.string()).optional(),
         sector: z.string().optional(),
-        workLocation: z.string(),
+        workLocation: z.string().optional(),
         city: z.string().optional(),
+        region: z.string().optional(),
         startDate: z.string(),
         endDate: z.string(),
-        workingHours: z.string(),
+        workingHours: z.string().optional(),
         numberOfWorkers: z.number().default(1),
         wageAmount: z.string(),
         wageType: z.enum(["hourly", "daily", "fixed"]).default("hourly"),
+        postedById: z.number(),
       }))
-      .mutation(async ({ ctx, input }) => {
-        const { startDate, endDate, wageAmount, ...rest } = input;
+      .mutation(async ({ input }) => {
+        const { startDate, endDate, wageAmount, postedById, ...rest } = input;
 
         await db.createJob({
           ...rest,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           wageAmount,
-          postedById: ctx.user.id,
+          postedById,
           status: "active",
         });
 
