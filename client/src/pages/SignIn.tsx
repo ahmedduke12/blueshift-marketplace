@@ -23,14 +23,32 @@ export default function SignIn() {
 
     const handleWorkerSignIn = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement actual sign in logic
+
+        // Store demo user in localStorage
+        const demoUser = {
+            id: 1,
+            name: "Demo Worker",
+            email: workerData.email,
+            role: "worker"
+        };
+        localStorage.setItem("demo-user", JSON.stringify(demoUser));
+
         toast.success("Welcome back! Redirecting...");
         setTimeout(() => setLocation("/worker/dashboard"), 1500);
     };
 
     const handleCompanySignIn = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement actual sign in logic
+
+        // Store demo user in localStorage
+        const demoUser = {
+            id: 1,
+            name: "Demo Company",
+            email: companyData.email,
+            role: "company_admin"
+        };
+        localStorage.setItem("demo-user", JSON.stringify(demoUser));
+
         toast.success("Welcome back! Redirecting...");
         setTimeout(() => setLocation("/company/dashboard"), 1500);
     };

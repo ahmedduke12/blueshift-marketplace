@@ -45,6 +45,17 @@ export default function SignUp() {
             toast.error("Passwords don't match");
             return;
         }
+
+        // Store demo user in localStorage
+        const demoUser = {
+            id: 1,
+            name: workerData.name,
+            email: workerData.email,
+            phone: workerData.phone,
+            role: "worker"
+        };
+        localStorage.setItem("demo-user", JSON.stringify(demoUser));
+
         toast.success("Worker account created! Redirecting...");
         setTimeout(() => setLocation("/worker/dashboard"), 1500);
     };
@@ -55,6 +66,19 @@ export default function SignUp() {
             toast.error("Passwords don't match");
             return;
         }
+
+        // Store demo user in localStorage
+        const demoUser = {
+            id: 1,
+            name: companyData.companyName,
+            email: companyData.email,
+            phone: companyData.phone,
+            role: "company_admin",
+            companyName: companyData.companyName,
+            crNumber: companyData.crNumber
+        };
+        localStorage.setItem("demo-user", JSON.stringify(demoUser));
+
         toast.success("Company account created! Redirecting...");
         setTimeout(() => setLocation("/company/dashboard"), 1500);
     };
