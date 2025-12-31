@@ -1,6 +1,6 @@
 [build]
   command = "pnpm install && pnpm build"
-  publish = "dist/client"
+  publish = "dist/public"
   
 [build.environment]
   NODE_VERSION = "20"
@@ -14,7 +14,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[functions]
-  directory = "dist/server"
-  node_bundler = "esbuild"
