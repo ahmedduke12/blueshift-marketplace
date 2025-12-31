@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -13,19 +10,11 @@ import { Briefcase, User, Award, Save, Plus } from "lucide-react";
 import { Link } from "wouter";
 
 export default function WorkerProfile() {
-    const { user, loading } = useAuth();
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(true); // Start in edit mode for new users
     const [newSkill, setNewSkill] = useState("");
 
-    // Use mock worker ID for demo
-    const mockWorkerId = 1;
-
-    const { data: worker, refetch } = trpc.worker.getById.useQuery(
-        { id: mockWorkerId },
-        { enabled: true }
-    );
-
     const [formData, setFormData] = useState({
+        name: "",
         primarySkill: "",
         skills: [] as string[],
         experience: 0,
@@ -33,40 +22,13 @@ export default function WorkerProfile() {
         phone: "",
     });
 
-    // Update form data when worker data loads
-    useEffect(() => {
-        if (worker) {
-            setFormData({
-                primarySkill: worker.primarySkill || "",
-                skills: worker.skills || [],
-                experience: worker.experience || 0,
-                nationality: worker.nationality || "",
-                phone: "",
-            });
-        }
-    }, [worker]);
-
-    const updateWorker = trpc.worker.update.useMutation({
-        onSuccess: () => {
-            toast.success("Profile updated successfully!");
-            setIsEditing(false);
-            refetch();
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to update profile");
-        }
-    });
-
     const handleSave = () => {
-        if (!worker) {
-            toast.error("Please fill in all required fields");
+        if (!formData.primarySkill) {
+            toast.error("Please enter your primary skill");
             return;
         }
-        updateWorker.mutate({
-            id: worker.id,
-            primarySkill: formData.primarySkill,
-            experience: formData.experience,
-        });
+        toast.success("Profile saved successfully!");
+        setIsEditing(false);
     };
 
     const handleAddSkill = () => {
@@ -86,22 +48,8 @@ export default function WorkerProfile() {
         });
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
-
-    // Calculate stats from assignments
-    const { data: assignments } = trpc.assignment.list.useQuery(
-        { workerId: worker?.id || mockWorkerId },
-        { enabled: true }
-    );
-
-    const completedJobs = assignments?.filter(a => a.status === 'completed').length || 0;
-    const rating = 4.8; // TODO: Calculate from reviews when implemented
+    const completedJobs = 0;
+    const rating = 0;
 
     return (
         <div className="min-h-screen bg-background">
@@ -131,17 +79,17 @@ export default function WorkerProfile() {
                     <div>
                         <h1 className="text-3xl font-bold mb-2">Worker Profile</h1>
                         <p className="text-muted-foreground">
-                            {worker ? "Manage your personal information and skills" : "Create your worker profile"}
+                            {formData.primarySkill ? "Manage your personal information and skills" : "Create your worker profile"}
                         </p>
                     </div>
-                    {worker && !isEditing ? (
+                    {formData.primarySkill && !isEditing ? (
                         <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                    ) : worker && isEditing ? (
+                    ) : formData.primarySkill && isEditing ? (
                         <div className="flex gap-2">
                             <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                            <Button onClick={handleSave} disabled={updateWorker.isPending}>
+                            <Button onClick={handleSave}>
                                 <Save className="w-4 h-4 mr-2" />
-                                {updateWorker.isPending ? "Saving..." : "Save Changes"}
+                                Save Changes
                             </Button>
                         </div>
                     ) : null}
@@ -160,7 +108,7 @@ export default function WorkerProfile() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-3xl font-bold">{rating} ⭐</p>
+                                <p className="text-3xl font-bold">{rating > 0 ? `${rating} ⭐` : "No ratings yet"}</p>
                                 <p className="text-sm text-muted-foreground">Average Rating</p>
                             </div>
                         </CardContent>
@@ -183,18 +131,28 @@ export default function WorkerProfile() {
                             Personal Information
                         </CardTitle>
                         <CardDescription>
-                            {worker ? "Your basic information" : "Complete your profile to get started"}
+                            {formData.primarySkill ? "Your basic information" : "Complete your profile to get started"}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    disabled={!isEditing}
+                                    placeholder="e.g., Ahmed Mohammed"
+                                />
+                            </div>
+                            <div>
                                 <Label htmlFor="nationality">Nationality</Label>
                                 <Input
                                     id="nationality"
-                                    value={isEditing || !worker ? formData.nationality : worker.nationality || "N/A"}
+                                    value={formData.nationality}
                                     onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                                    disabled={!isEditing && !!worker}
+                                    disabled={!isEditing}
                                     placeholder="e.g., Saudi Arabia"
                                 />
                             </div>
@@ -204,16 +162,11 @@ export default function WorkerProfile() {
                                     id="phone"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    disabled={!isEditing && !!worker}
+                                    disabled={!isEditing}
                                     placeholder="+966 50 123 4567"
                                 />
                             </div>
                         </div>
-                        {!worker && (
-                            <p className="text-sm text-muted-foreground">
-                                Additional information like Iqama number and visa details can be added later
-                            </p>
-                        )}
                     </CardContent>
                 </Card>
 
@@ -233,7 +186,7 @@ export default function WorkerProfile() {
                                 id="primarySkill"
                                 value={formData.primarySkill}
                                 onChange={(e) => setFormData({ ...formData, primarySkill: e.target.value })}
-                                disabled={!isEditing && !!worker}
+                                disabled={!isEditing}
                                 placeholder="e.g., Construction, Carpentry, Plumbing"
                                 className="mt-2"
                             />
@@ -243,7 +196,7 @@ export default function WorkerProfile() {
 
                         <div>
                             <Label>Additional Skills</Label>
-                            {(isEditing || !worker) && (
+                            {isEditing && (
                                 <div className="flex gap-2 mt-2 mb-3">
                                     <Input
                                         value={newSkill}
@@ -261,16 +214,16 @@ export default function WorkerProfile() {
                                     <Badge
                                         key={index}
                                         variant="secondary"
-                                        className="cursor-pointer"
-                                        onClick={() => (isEditing || !worker) && handleRemoveSkill(skill)}
+                                        className={isEditing ? "cursor-pointer" : ""}
+                                        onClick={() => isEditing && handleRemoveSkill(skill)}
                                     >
                                         {skill}
-                                        {(isEditing || !worker) && <span className="ml-1">×</span>}
+                                        {isEditing && <span className="ml-1">×</span>}
                                     </Badge>
                                 ))}
                                 {formData.skills.length === 0 && (
                                     <p className="text-sm text-muted-foreground">
-                                        {isEditing || !worker ? "Add skills to showcase your expertise" : "No additional skills listed"}
+                                        {isEditing ? "Add skills to showcase your expertise" : "No additional skills listed"}
                                     </p>
                                 )}
                             </div>
@@ -286,42 +239,39 @@ export default function WorkerProfile() {
                                 min="0"
                                 value={formData.experience}
                                 onChange={(e) => setFormData({ ...formData, experience: parseInt(e.target.value) || 0 })}
-                                disabled={!isEditing && !!worker}
+                                disabled={!isEditing}
                                 className="mt-2"
                             />
                         </div>
 
-                        {!worker && (
+                        {!formData.primarySkill && (
                             <div className="pt-4">
-                                <Button onClick={handleSave} className="w-full" disabled={!formData.primarySkill || updateWorker.isPending}>
+                                <Button onClick={handleSave} className="w-full" disabled={!formData.primarySkill}>
                                     <Save className="w-4 h-4 mr-2" />
-                                    {updateWorker.isPending ? "Creating Profile..." : "Create Profile"}
+                                    Create Profile
                                 </Button>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {worker && (
+                {formData.primarySkill && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Visa Information</CardTitle>
-                            <CardDescription>Your visa and work permit details</CardDescription>
+                            <CardTitle>Getting Started</CardTitle>
+                            <CardDescription>Next steps to find work</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Visa Type</Label>
-                                    <p className="text-sm mt-1">{worker.visaType || "Not specified"}</p>
-                                </div>
-                                <div>
-                                    <Label>Visa Expiry Date</Label>
-                                    <p className="text-sm mt-1">
-                                        {worker.visaExpiryDate
-                                            ? new Date(worker.visaExpiryDate).toLocaleDateString()
-                                            : "Not specified"}
-                                    </p>
-                                </div>
+                        <CardContent className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                                Your profile is ready! Here's what you can do next:
+                            </p>
+                            <div className="space-y-2">
+                                <Button asChild className="w-full">
+                                    <Link href="/jobs">Browse Available Jobs</Link>
+                                </Button>
+                                <Button asChild variant="outline" className="w-full">
+                                    <Link href="/worker/dashboard">Go to Dashboard</Link>
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
