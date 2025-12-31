@@ -2,12 +2,12 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
-import { 
-  Building2, 
-  Users, 
-  CheckCircle2, 
-  Shield, 
-  TrendingUp, 
+import {
+  Building2,
+  Users,
+  CheckCircle2,
+  Shield,
+  TrendingUp,
   Clock,
   ArrowRight,
   Briefcase,
@@ -43,11 +43,14 @@ export default function Home() {
             <span className="text-2xl font-bold text-foreground">BlueShift</span>
           </div>
           <div className="flex items-center space-x-4">
-            <a href={getLoginUrl()} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Sign In
-            </a>
-            <Button asChild>
-              <a href={getLoginUrl()}>Get Started</a>
+            <Link href="/jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Browse Jobs
+            </Link>
+            <Button asChild size="sm">
+              <Link href="/worker/dashboard">Worker Portal</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/company/dashboard">Company Portal</Link>
             </Button>
           </div>
         </div>
@@ -67,12 +70,19 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-lg px-8">
-                <a href={getLoginUrl()}>
-                  Start Now <ArrowRight className="ml-2 w-5 h-5" />
-                </a>
+                <Link href="/jobs">
+                  Browse Jobs <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
               </Button>
-              <Button size="lg" variant="outline" onClick={() => window.location.href = '/company/dashboard'} className="text-lg px-8">
-                Learn More
+              <Button size="lg" variant="outline" asChild className="text-lg px-8">
+                <Link href="/worker/dashboard">
+                  Worker Dashboard
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="text-lg px-8">
+                <Link href="/company/dashboard">
+                  Company Dashboard
+                </Link>
               </Button>
             </div>
           </div>
@@ -88,7 +98,7 @@ export default function Home() {
               A compliant marketplace connecting workers and businesses with proper sponsor approval
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="card-hover">
               <CardHeader>
@@ -212,7 +222,7 @@ export default function Home() {
               Automated regulatory checks ensure every transaction meets Ajeer and Qiwa requirements
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {[
               { icon: Shield, title: "Worker Eligibility", desc: "Automated verification" },
