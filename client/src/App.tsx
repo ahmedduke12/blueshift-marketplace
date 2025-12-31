@@ -9,6 +9,9 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import WorkerDashboard from "./pages/WorkerDashboard";
 import JobListings from "./pages/JobListings";
 import JobDetails from "./pages/JobDetails";
+import WorkerProfile from "./pages/WorkerProfile";
+import JobPosting from "./pages/JobPosting";
+import ApprovalDashboard from "./pages/ApprovalDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -17,8 +20,11 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/company/dashboard"} component={CompanyDashboard} />
       <Route path={"/worker/dashboard"} component={WorkerDashboard} />
+      <Route path={"/worker/profile"} component={WorkerProfile} />
       <Route path={"/jobs"} component={JobListings} />
+      <Route path={"/jobs/post"} component={JobPosting} />
       <Route path={"/jobs/:id"} component={JobDetails} />
+      <Route path={"/approvals"} component={ApprovalDashboard} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
