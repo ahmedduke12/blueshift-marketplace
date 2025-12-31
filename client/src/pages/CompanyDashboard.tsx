@@ -1,93 +1,63 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
-import { Briefcase, Users, Clock, CheckCircle, XCircle, Plus, Search } from "lucide-react";
-import { useLocation } from "wouter";
+import { Briefcase, Users, Clock, Plus, Search, Building2 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function CompanyDashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const [, navigate] = useLocation();
+  // Mock company data for demo
+  const company = {
+    name: "Demo Construction Co.",
+    city: "Riyadh",
+    sector: "Construction"
+  };
 
-  // Fetch company data
-  const { data: companies, isLoading: companiesLoading } = trpc.company.list.useQuery();
-  const myCompany = companies?.[0]; // Assuming user is admin of first company
-
-  // Fetch dashboard stats
-  const { data: stats } = trpc.company.getDashboard.useQuery(
-    { companyId: myCompany?.id || 0 },
-    { enabled: !!myCompany }
-  );
-
-  // Fetch pending approvals for workers
-  const { data: pendingApprovals } = trpc.company.getPendingApprovals.useQuery(
-    { sponsorCompanyId: myCompany?.id || 0 },
-    { enabled: !!myCompany }
-  );
-
-  if (authLoading || companiesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || user.role !== "company_admin") {
-    navigate("/");
-    return null;
-  }
-
-  if (!myCompany) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>No Company Found</CardTitle>
-            <CardDescription>
-              You need to register your company first to access the dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/company/register")} className="w-full">
-              Register Company
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const stats = {
+    activeJobs: 0,
+    activeAssignments: 0,
+    pendingApprovals: 0,
+    totalWorkers: 0
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">{myCompany.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {myCompany.city} • {myCompany.sector}
-                {myCompany.nitaqatStatus && (
-                  <Badge variant="outline" className="ml-2">
-                    Nitaqat: {myCompany.nitaqatStatus}
-                  </Badge>
-                )}
-              </p>
+            <div className="flex items-center space-x-2">
+              <Briefcase className="w-6 h-6 text-primary" />
+              <span className="text-xl font-bold">BlueShift</span>
             </div>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Back to Home
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Link href="/jobs/post">
+                <Button>Post Job</Button>
+              </Link>
+              <Link href="/approvals">
+                <Button variant="outline">Approvals</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Company Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">{company.name}</h1>
+              <p className="text-muted-foreground">
+                {company.city} • {company.sector}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -96,7 +66,8 @@ export default function CompanyDashboard() {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.activeJobs || 0}</div>
+              <div className="text-2xl font-bold">{stats.activeJobs}</div>
+              <p className="text-xs text-muted-foreground">Currently hiring</p>
             </CardContent>
           </Card>
 
@@ -106,7 +77,8 @@ export default function CompanyDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.activeAssignments || 0}</div>
+              <div className="text-2xl font-bold">{stats.activeAssignments}</div>
+              <p className="text-xs text-muted-foreground">Workers on jobs</p>
             </CardContent>
           </Card>
 
@@ -116,7 +88,8 @@ export default function CompanyDashboard() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pendingApprovals?.length || 0}</div>
+              <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+              <p className="text-xs text-muted-foreground">Awaiting decision</p>
             </CardContent>
           </Card>
 
@@ -126,37 +99,42 @@ export default function CompanyDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.pendingApprovals || 0}</div>
+              <div className="text-2xl font-bold">{stats.totalWorkers}</div>
+              <p className="text-xs text-muted-foreground">Under sponsorship</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="demand" className="space-y-4">
+        <Tabs defaultValue="jobs" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="demand">Hire Workers</TabsTrigger>
-            <TabsTrigger value="supply">
-              Manage Workers
-              {pendingApprovals && pendingApprovals.length > 0 && (
+            <TabsTrigger value="jobs">Job Postings</TabsTrigger>
+            <TabsTrigger value="workers">
+              Workers
+              {stats.pendingApprovals > 0 && (
                 <Badge variant="destructive" className="ml-2">
-                  {pendingApprovals.length}
+                  {stats.pendingApprovals}
                 </Badge>
               )}
             </TabsTrigger>
           </TabsList>
 
-          {/* Demand Side: Hire Workers */}
-          <TabsContent value="demand" className="space-y-4">
+          {/* Jobs Tab */}
+          <TabsContent value="jobs" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Job Postings & Hiring</h2>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => navigate("/company/workers/search")}>
-                  <Search className="mr-2 h-4 w-4" />
-                  Search Workers
+                <Button variant="outline" asChild>
+                  <Link href="/jobs">
+                    <Search className="mr-2 h-4 w-4" />
+                    Browse Workers
+                  </Link>
                 </Button>
-                <Button onClick={() => navigate("/company/jobs/new")}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Post New Job
+                <Button asChild>
+                  <Link href="/jobs/post">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Post New Job
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -169,11 +147,12 @@ export default function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No active job postings</p>
-                  <Button variant="link" onClick={() => navigate("/company/jobs/new")}>
-                    Post your first job
+                <div className="text-center py-12 text-muted-foreground">
+                  <Briefcase className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">No active job postings</p>
+                  <p className="text-sm mb-4">Start hiring by posting your first job</p>
+                  <Button asChild>
+                    <Link href="/jobs/post">Post Your First Job</Link>
                   </Button>
                 </div>
               </CardContent>
@@ -190,28 +169,31 @@ export default function CompanyDashboard() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No applications yet</p>
+                  <p className="text-sm mt-2">Applications will appear here once workers apply</p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Supply Side: Manage Workers */}
-          <TabsContent value="supply" className="space-y-4">
+          {/* Workers Tab */}
+          <TabsContent value="workers" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Worker Management</h2>
-              <Button variant="outline" onClick={() => navigate("/company/workers")}>
-                <Users className="mr-2 h-4 w-4" />
-                View All Workers
+              <Button variant="outline" asChild>
+                <Link href="/approvals">
+                  <Clock className="mr-2 h-4 w-4" />
+                  View All Approvals
+                </Link>
               </Button>
             </div>
 
-            {/* Pending Approval Requests */}
+            {/* Pending Approvals */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Pending Approval Requests
-                  {pendingApprovals && pendingApprovals.length > 0 && (
-                    <Badge variant="destructive">{pendingApprovals.length}</Badge>
+                  {stats.pendingApprovals > 0 && (
+                    <Badge variant="destructive">{stats.pendingApprovals}</Badge>
                   )}
                 </CardTitle>
                 <CardDescription>
@@ -219,22 +201,14 @@ export default function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!pendingApprovals || pendingApprovals.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No pending approval requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingApprovals.map((assignment: any) => (
-                      <ApprovalRequestCard
-                        key={assignment.id}
-                        assignment={assignment}
-                        companyId={myCompany.id}
-                      />
-                    ))}
-                  </div>
-                )}
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">No pending approval requests</p>
+                  <p className="text-sm mb-4">All requests have been processed</p>
+                  <Button variant="outline" asChild>
+                    <Link href="/approvals">View Approval Dashboard</Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -247,101 +221,48 @@ export default function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No workers registered yet</p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">No workers registered yet</p>
+                  <p className="text-sm">Workers under your sponsorship will appear here</p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
-  );
-}
 
-// Approval Request Card Component
-function ApprovalRequestCard({ assignment, companyId }: { assignment: any; companyId: number }) {
-  const utils = trpc.useUtils();
-
-  const approveMutation = trpc.company.approveAssignment.useMutation({
-    onSuccess: () => {
-      utils.company.getPendingApprovals.invalidate();
-      utils.company.getDashboard.invalidate();
-    },
-  });
-
-  const declineMutation = trpc.company.declineAssignment.useMutation({
-    onSuccess: () => {
-      utils.company.getPendingApprovals.invalidate();
-      utils.company.getDashboard.invalidate();
-    },
-  });
-
-  const handleApprove = () => {
-    if (confirm("Approve this assignment request?")) {
-      approveMutation.mutate({ assignmentId: assignment.id });
-    }
-  };
-
-  const handleDecline = () => {
-    const notes = prompt("Reason for declining (optional):");
-    if (notes !== null) {
-      declineMutation.mutate({ assignmentId: assignment.id, notes: notes || undefined });
-    }
-  };
-
-  return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <h4 className="font-semibold">Worker Assignment Request</h4>
-          <p className="text-sm text-muted-foreground">
-            Requested {new Date(assignment.requestedAt).toLocaleDateString()}
-          </p>
-        </div>
-        <Badge variant="outline">Pending</Badge>
-      </div>
-
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Job:</span>
-          <span className="font-medium">Job #{assignment.jobId}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Worker:</span>
-          <span className="font-medium">Worker #{assignment.workerId}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Company:</span>
-          <span className="font-medium">Company #{assignment.companyId}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Wage:</span>
-          <span className="font-medium">{assignment.wageAmount} SAR</span>
-        </div>
-      </div>
-
-      <div className="flex gap-2 pt-2">
-        <Button
-          size="sm"
-          onClick={handleApprove}
-          disabled={approveMutation.isPending}
-          className="flex-1"
-        >
-          <CheckCircle className="mr-2 h-4 w-4" />
-          Approve
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleDecline}
-          disabled={declineMutation.isPending}
-          className="flex-1"
-        >
-          <XCircle className="mr-2 h-4 w-4" />
-          Decline
-        </Button>
+        {/* Quick Actions */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks for managing your company</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button asChild variant="outline" className="h-auto py-4 flex-col">
+                <Link href="/jobs/post">
+                  <Plus className="h-6 w-6 mb-2" />
+                  <span className="font-medium">Post a Job</span>
+                  <span className="text-xs text-muted-foreground mt-1">Find workers for your needs</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto py-4 flex-col">
+                <Link href="/jobs">
+                  <Search className="h-6 w-6 mb-2" />
+                  <span className="font-medium">Browse Workers</span>
+                  <span className="text-xs text-muted-foreground mt-1">Search available talent</span>
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto py-4 flex-col">
+                <Link href="/approvals">
+                  <Clock className="h-6 w-6 mb-2" />
+                  <span className="font-medium">Manage Approvals</span>
+                  <span className="text-xs text-muted-foreground mt-1">Review worker requests</span>
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
