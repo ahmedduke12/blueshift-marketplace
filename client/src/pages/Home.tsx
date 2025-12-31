@@ -46,11 +46,11 @@ export default function Home() {
             <Link href="/jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Browse Jobs
             </Link>
-            <Button asChild size="sm">
-              <Link href="/worker/dashboard">Worker Portal</Link>
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/signin">Sign In</Link>
             </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/company/dashboard">Company Portal</Link>
+            <Button asChild size="sm">
+              <Link href="/signup">Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -70,18 +70,13 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" asChild className="text-lg px-8">
+                <Link href="/signup">
+                  Get Started <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="text-lg px-8">
                 <Link href="/jobs">
-                  Browse Jobs <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="text-lg px-8">
-                <Link href="/worker/dashboard">
-                  Worker Dashboard
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="text-lg px-8">
-                <Link href="/company/dashboard">
-                  Company Dashboard
+                  Browse Jobs
                 </Link>
               </Button>
             </div>
