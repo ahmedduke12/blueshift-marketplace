@@ -96,9 +96,9 @@ export default function JobPosting() {
             case 1:
                 return formData.title && formData.description && formData.sector;
             case 2:
-                return formData.workLocation && formData.city;
+                return true; // Location is optional
             case 3:
-                return formData.startDate && formData.endDate && formData.workingHours;
+                return formData.startDate && formData.endDate;
             case 4:
                 return formData.wageAmount && formData.wageType;
             default:
