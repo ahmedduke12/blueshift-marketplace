@@ -1,51 +1,61 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, Clock, DollarSign, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
 import { Link } from "wouter";
 
-// Mock data
-const mockStats = {
-    activeJobs: 2,
-    pendingApprovals: 1,
-    completedJobs: 5,
-    totalEarnings: 12500
-};
-
-const mockAssignments = [
-    { id: 1, title: "Construction Helper", wageAmount: 2500, status: "active" },
-    { id: 2, title: "Warehouse Assistant", wageAmount: 2000, status: "pending_sponsor_approval" },
-    { id: 3, title: "Delivery Driver", wageAmount: 3000, status: "completed" },
-];
-
-const mockJobs = [
-    {
-        id: 1,
-        title: "Retail Sales Associate",
-        wageAmount: 2200,
-        wageType: "daily",
-        startDate: "2024-02-01",
-        city: "Riyadh"
-    },
-    {
-        id: 2,
-        title: "Restaurant Server",
-        wageAmount: 150,
-        wageType: "hourly",
-        startDate: "2024-02-05",
-        city: "Jeddah"
-    },
-    {
-        id: 3,
-        title: "Security Guard",
-        wageAmount: 3000,
-        wageType: "fixed",
-        startDate: "2024-02-10",
-        city: "Dammam"
-    },
-];
-
 export default function WorkerDashboard() {
+    const { user, loading } = useAuth();
+
+    // Fetch worker data
+    const { data: worker } = trpc.worker.getProfile.useQuery(undefined, {
+        enabled: !!user
+    });
+
+    const { data: assignments } = trpc.assignment.list.useQuery(
+        { workerId: worker?.id },
+        { enabled: !!worker?.id }
+    );
+
+    const { data: availableJobs } = trpc.job.list.useQuery({
+        status: "active"
+    });
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Card className="max-w-md">
+                    <CardHeader>
+                        <CardTitle>Authentication Required</CardTitle>
+                        <CardDescription>Please sign in to access your dashboard</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="w-full">
+                            <Link href="/">Go to Home</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    const stats = {
+        activeJobs: assignments?.filter(a => a.status === 'active').length || 0,
+        pendingApprovals: assignments?.filter(a => a.status === 'pending_sponsor_approval').length || 0,
+        completedJobs: assignments?.filter(a => a.status === 'completed').length || 0,
+        totalEarnings: assignments?.reduce((sum, a) => sum + (Number(a.wageAmount) || 0), 0) || 0
+    };
+
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -71,7 +81,7 @@ export default function WorkerDashboard() {
             <main className="container mx-auto px-4 py-8">
                 {/* Welcome Section */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Welcome back, Worker!</h1>
+                    <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name || 'Worker'}!</h1>
                     <p className="text-muted-foreground">Here's your activity overview</p>
                 </div>
 
@@ -83,7 +93,7 @@ export default function WorkerDashboard() {
                             <Briefcase className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{mockStats.activeJobs}</div>
+                            <div className="text-2xl font-bold">{stats.activeJobs}</div>
                             <p className="text-xs text-muted-foreground">Currently working</p>
                         </CardContent>
                     </Card>
@@ -94,7 +104,7 @@ export default function WorkerDashboard() {
                             <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{mockStats.pendingApprovals}</div>
+                            <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
                             <p className="text-xs text-muted-foreground">Awaiting sponsor</p>
                         </CardContent>
                     </Card>
@@ -105,7 +115,7 @@ export default function WorkerDashboard() {
                             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{mockStats.completedJobs}</div>
+                            <div className="text-2xl font-bold">{stats.completedJobs}</div>
                             <p className="text-xs text-muted-foreground">Total finished</p>
                         </CardContent>
                     </Card>
@@ -116,7 +126,7 @@ export default function WorkerDashboard() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{mockStats.totalEarnings.toLocaleString()} SAR</div>
+                            <div className="text-2xl font-bold">{stats.totalEarnings.toLocaleString()} SAR</div>
                             <p className="text-xs text-muted-foreground">All time</p>
                         </CardContent>
                     </Card>
@@ -130,25 +140,36 @@ export default function WorkerDashboard() {
                             <CardDescription>Your latest job assignments</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                {mockAssignments.map((assignment) => (
-                                    <div key={assignment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                        <div className="flex-1">
-                                            <p className="font-medium">{assignment.title}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {assignment.wageAmount} SAR
-                                            </p>
+                            {assignments && assignments.length > 0 ? (
+                                <div className="space-y-4">
+                                    {assignments.slice(0, 5).map((assignment) => (
+                                        <div key={assignment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                            <div className="flex-1">
+                                                <p className="font-medium">Assignment #{assignment.id}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {assignment.wageAmount} SAR
+                                                </p>
+                                            </div>
+                                            <Badge variant={
+                                                assignment.status === 'active' ? 'default' :
+                                                    assignment.status === 'completed' ? 'secondary' :
+                                                        assignment.status === 'pending_sponsor_approval' ? 'outline' :
+                                                            'destructive'
+                                            }>
+                                                {assignment.status.replace(/_/g, ' ')}
+                                            </Badge>
                                         </div>
-                                        <Badge variant={
-                                            assignment.status === 'active' ? 'default' :
-                                                assignment.status === 'completed' ? 'secondary' :
-                                                    'outline'
-                                        }>
-                                            {assignment.status.replace(/_/g, ' ')}
-                                        </Badge>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                    <p>No assignments yet</p>
+                                    <Button asChild className="mt-4">
+                                        <Link href="/jobs">Browse Available Jobs</Link>
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -159,29 +180,37 @@ export default function WorkerDashboard() {
                             <CardDescription>New opportunities for you</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                {mockJobs.map((job) => (
-                                    <div key={job.id} className="p-4 border rounded-lg hover:border-primary transition-colors">
-                                        <h3 className="font-medium mb-2">{job.title}</h3>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                                            <span className="flex items-center gap-1">
-                                                <DollarSign className="w-4 h-4" />
-                                                {job.wageAmount} SAR/{job.wageType}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Calendar className="w-4 h-4" />
-                                                {new Date(job.startDate).toLocaleDateString()}
-                                            </span>
+                            {availableJobs && availableJobs.length > 0 ? (
+                                <div className="space-y-4">
+                                    {availableJobs.slice(0, 3).map((job) => (
+                                        <div key={job.id} className="p-4 border rounded-lg hover:border-primary transition-colors">
+                                            <h3 className="font-medium mb-2">{job.title}</h3>
+                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                                                <span className="flex items-center gap-1">
+                                                    <DollarSign className="w-4 h-4" />
+                                                    {job.wageAmount} SAR/{job.wageType}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Calendar className="w-4 h-4" />
+                                                    {new Date(job.startDate).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <Button asChild size="sm" className="w-full">
+                                                <Link href={`/jobs/${job.id}`}>View Details</Link>
+                                            </Button>
                                         </div>
-                                        <Button asChild size="sm" className="w-full">
-                                            <Link href={`/jobs/${job.id}`}>View Details</Link>
-                                        </Button>
-                                    </div>
-                                ))}
-                                <Button asChild variant="outline" className="w-full">
-                                    <Link href="/jobs">View All Jobs</Link>
-                                </Button>
-                            </div>
+                                    ))}
+                                    <Button asChild variant="outline" className="w-full">
+                                        <Link href="/jobs">View All Jobs</Link>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                    <p>No jobs available right now</p>
+                                    <p className="text-sm mt-2">Check back soon for new opportunities</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

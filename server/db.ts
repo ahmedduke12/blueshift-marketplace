@@ -640,3 +640,65 @@ export async function getWorkerDashboardStats(workerId: number) {
     totalEarnings: totalEarnings?.total || 0,
   };
 }
+
+// ============================================================================
+// HELPER FUNCTIONS FOR TRPC
+// ============================================================================
+
+/**
+ * Get jobs with optional filters
+ */
+export async function getJobs(filters?: {
+  companyId?: number;
+  status?: "draft" | "active" | "filled" | "cancelled" | "completed";
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(jobs);
+
+  const conditions = [];
+  if (filters?.companyId) {
+    conditions.push(eq(jobs.companyId, filters.companyId));
+  }
+  if (filters?.status) {
+    conditions.push(eq(jobs.status, filters.status));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(jobs.createdAt));
+}
+
+/**
+ * Get assignments with optional filters
+ */
+export async function getAssignments(filters?: {
+  workerId?: number;
+  companyId?: number;
+  sponsorCompanyId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(assignments);
+
+  const conditions = [];
+  if (filters?.workerId) {
+    conditions.push(eq(assignments.workerId, filters.workerId));
+  }
+  if (filters?.companyId) {
+    conditions.push(eq(assignments.companyId, filters.companyId));
+  }
+  if (filters?.sponsorCompanyId) {
+    conditions.push(eq(assignments.sponsorCompanyId, filters.sponsorCompanyId));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(assignments.createdAt));
+}

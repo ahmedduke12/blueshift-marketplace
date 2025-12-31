@@ -483,19 +483,16 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    list: protectedProcedure
+    list: publicProcedure
       .input(z.object({
         companyId: z.number().optional(),
         status: z.enum(["draft", "active", "filled", "cancelled", "completed"]).optional(),
       }))
       .query(async ({ input }) => {
-        if (input.companyId) {
-          return await db.getJobsByCompany(input.companyId);
-        }
-        return await db.getActiveJobs();
+        return await db.getJobs(input);
       }),
 
-    getById: protectedProcedure
+    getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         const job = await db.getJobById(input.id);
@@ -613,23 +610,14 @@ export const appRouter = router({
         return { success: true, assignmentId };
       }),
 
-    list: protectedProcedure
+    list: publicProcedure
       .input(z.object({
         workerId: z.number().optional(),
         companyId: z.number().optional(),
         sponsorCompanyId: z.number().optional(),
       }))
       .query(async ({ input }) => {
-        if (input.workerId) {
-          return await db.getAssignmentsByWorker(input.workerId);
-        }
-        if (input.companyId) {
-          return await db.getAssignmentsByCompany(input.companyId);
-        }
-        if (input.sponsorCompanyId) {
-          return await db.getAssignmentsBySponsor(input.sponsorCompanyId);
-        }
-        return [];
+        return await db.getAssignments(input);
       }),
 
     getById: protectedProcedure

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,90 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Briefcase, MapPin, DollarSign, Calendar, Search, Filter } from "lucide-react";
 import { Link } from "wouter";
 
-// Mock job data
-const mockJobs = [
-    {
-        id: 1,
-        title: "Construction Helper",
-        description: "Assist with general construction tasks and material handling",
-        wageAmount: 2500,
-        wageType: "daily",
-        city: "Riyadh",
-        region: "Central",
-        startDate: "2024-02-01",
-        sector: "construction",
-        status: "active"
-    },
-    {
-        id: 2,
-        title: "Restaurant Server",
-        description: "Serve customers in a busy restaurant environment",
-        wageAmount: 150,
-        wageType: "hourly",
-        city: "Jeddah",
-        region: "Western",
-        startDate: "2024-02-05",
-        sector: "hospitality",
-        status: "active"
-    },
-    {
-        id: 3,
-        title: "Warehouse Assistant",
-        description: "Help with inventory management and order fulfillment",
-        wageAmount: 2000,
-        wageType: "daily",
-        city: "Dammam",
-        region: "Eastern",
-        startDate: "2024-02-10",
-        sector: "logistics",
-        status: "active"
-    },
-    {
-        id: 4,
-        title: "Retail Sales Associate",
-        description: "Assist customers and maintain store appearance",
-        wageAmount: 2200,
-        wageType: "daily",
-        city: "Riyadh",
-        region: "Central",
-        startDate: "2024-02-15",
-        sector: "retail",
-        status: "active"
-    },
-    {
-        id: 5,
-        title: "Security Guard",
-        description: "Monitor premises and ensure safety",
-        wageAmount: 3000,
-        wageType: "fixed",
-        city: "Jeddah",
-        region: "Western",
-        startDate: "2024-02-20",
-        sector: "construction",
-        status: "active"
-    },
-    {
-        id: 6,
-        title: "Delivery Driver",
-        description: "Deliver packages to customers across the city",
-        wageAmount: 180,
-        wageType: "hourly",
-        city: "Riyadh",
-        region: "Central",
-        startDate: "2024-02-25",
-        sector: "logistics",
-        status: "active"
-    },
-];
-
 export default function JobListings() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sectorFilter, setSectorFilter] = useState<string>("all");
     const [wageTypeFilter, setWageTypeFilter] = useState<string>("all");
 
-    const filteredJobs = mockJobs.filter(job => {
+    const { data: jobs, isLoading } = trpc.job.list.useQuery({
+        status: "active"
+    });
+
+    const filteredJobs = jobs?.filter(job => {
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchTerm.toLowerCase());
+            job.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesSector = sectorFilter === "all" || job.sector === sectorFilter;
         const matchesWageType = wageTypeFilter === "all" || job.wageType === wageTypeFilter;
 
@@ -156,6 +85,7 @@ export default function JobListings() {
                                     <SelectItem value="hospitality">Hospitality</SelectItem>
                                     <SelectItem value="retail">Retail</SelectItem>
                                     <SelectItem value="logistics">Logistics</SelectItem>
+                                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -175,7 +105,11 @@ export default function JobListings() {
                 </Card>
 
                 {/* Job Listings */}
-                {filteredJobs.length > 0 ? (
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                ) : filteredJobs && filteredJobs.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredJobs.map((job) => (
                             <Card key={job.id} className="hover:shadow-lg transition-shadow">
@@ -198,19 +132,23 @@ export default function JobListings() {
                                             <span>/ {job.wageType}</span>
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{job.city}, {job.region}</span>
-                                        </div>
+                                        {job.city && (
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <MapPin className="w-4 h-4" />
+                                                <span>{job.city}{job.region && `, ${job.region}`}</span>
+                                            </div>
+                                        )}
 
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Calendar className="w-4 h-4" />
                                             <span>{new Date(job.startDate).toLocaleDateString()}</span>
                                         </div>
 
-                                        <Badge variant="outline" className="mt-2">
-                                            {job.sector}
-                                        </Badge>
+                                        {job.sector && (
+                                            <Badge variant="outline" className="mt-2">
+                                                {job.sector}
+                                            </Badge>
+                                        )}
                                     </div>
 
                                     <Button asChild className="w-full">
@@ -226,18 +164,22 @@ export default function JobListings() {
                             <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                             <h3 className="text-lg font-medium mb-2">No jobs found</h3>
                             <p className="text-muted-foreground mb-4">
-                                Try adjusting your filters
+                                {searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all"
+                                    ? "Try adjusting your filters"
+                                    : "No jobs are currently available"}
                             </p>
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setSearchTerm("");
-                                    setSectorFilter("all");
-                                    setWageTypeFilter("all");
-                                }}
-                            >
-                                Clear Filters
-                            </Button>
+                            {(searchTerm || sectorFilter !== "all" || wageTypeFilter !== "all") && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setSearchTerm("");
+                                        setSectorFilter("all");
+                                        setWageTypeFilter("all");
+                                    }}
+                                >
+                                    Clear Filters
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
                 )}
