@@ -1,0 +1,76 @@
+import { Briefcase } from "lucide-react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+
+interface HeaderProps {
+    /** User type: 'worker', 'company', or undefined for not logged in */
+    userType?: "worker" | "company";
+    /** Show navigation links */
+    showNav?: boolean;
+    /** Custom navigation items */
+    navItems?: Array<{ label: string; href: string; variant?: "default" | "ghost" | "outline" }>;
+}
+
+export default function Header({ userType, showNav = true, navItems }: HeaderProps) {
+    // Determine home link based on user type
+    const homeLink = userType === "worker"
+        ? "/worker/dashboard"
+        : userType === "company"
+            ? "/company/dashboard"
+            : "/";
+
+    // Default navigation items based on user type
+    const defaultNavItems = userType === "worker"
+        ? [
+            { label: "Dashboard", href: "/worker/dashboard", variant: "ghost" as const },
+            { label: "Browse Jobs", href: "/jobs", variant: "ghost" as const },
+            { label: "Profile", href: "/worker/profile", variant: "default" as const },
+        ]
+        : userType === "company"
+            ? [
+                { label: "Dashboard", href: "/company/dashboard", variant: "ghost" as const },
+                { label: "Post Job", href: "/jobs/post", variant: "default" as const },
+                { label: "Approvals", href: "/approvals", variant: "outline" as const },
+            ]
+            : [
+                { label: "Browse Jobs", href: "/jobs", variant: "ghost" as const },
+                { label: "Sign In", href: "/signin", variant: "ghost" as const },
+                { label: "Sign Up", href: "/signup", variant: "default" as const },
+            ];
+
+    const displayNavItems = navItems || defaultNavItems;
+
+    return (
+        <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-4">
+                <div className="flex items-center justify-between">
+                    {/* Logo */}
+                    <Link href={homeLink}>
+                        <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity">
+                            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                                <Briefcase className="w-6 h-6 text-primary-foreground" />
+                            </div>
+                            <span className="text-xl font-bold">BlueShift</span>
+                        </div>
+                    </Link>
+
+                    {/* Navigation */}
+                    {showNav && (
+                        <div className="flex items-center space-x-4">
+                            {displayNavItems.map((item, index) => (
+                                <Button
+                                    key={index}
+                                    asChild
+                                    size="sm"
+                                    variant={item.variant || "ghost"}
+                                >
+                                    <Link href={item.href}>{item.label}</Link>
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </header>
+    );
+}
