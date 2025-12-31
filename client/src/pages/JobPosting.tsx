@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,22 @@ export default function JobPosting() {
         }
     };
 
+    // Mock IDs for demo
+    const mockCompanyId = 1;
+    const mockUserId = 1;
+
+    const createJob = trpc.job.create.useMutation({
+        onSuccess: () => {
+            toast.success("Job posted successfully!");
+            setTimeout(() => {
+                setLocation("/company/dashboard");
+            }, 1500);
+        },
+        onError: (error) => {
+            toast.error(error.message || "Failed to post job");
+        }
+    });
+
     const handleSubmit = () => {
         // Validate required fields
         if (!formData.title || !formData.description || !formData.sector) {
@@ -54,11 +71,23 @@ export default function JobPosting() {
             return;
         }
 
-        // For demo: just show success message
-        toast.success("Job posted successfully!");
-        setTimeout(() => {
-            setLocation("/company/dashboard");
-        }, 1500);
+        // Save job to database
+        createJob.mutate({
+            companyId: mockCompanyId,
+            title: formData.title,
+            description: formData.description,
+            sector: formData.sector || undefined,
+            workLocation: formData.workLocation || undefined,
+            city: formData.city || undefined,
+            region: formData.region || undefined,
+            startDate: formData.startDate,
+            endDate: formData.endDate,
+            workingHours: formData.workingHours || undefined,
+            numberOfWorkers: formData.numberOfWorkers,
+            wageAmount: formData.wageAmount,
+            wageType: formData.wageType,
+            postedById: mockUserId
+        });
     };
 
     const isStepValid = () => {
