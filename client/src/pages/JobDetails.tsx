@@ -277,7 +277,7 @@ export default function JobDetails() {
                 </Card>
 
                 {/* Apply Button */}
-                {user && worker && (
+                {user && (
                     <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
