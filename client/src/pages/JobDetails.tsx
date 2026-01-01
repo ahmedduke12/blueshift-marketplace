@@ -20,6 +20,7 @@ export default function JobDetails() {
     const { user } = useAuth();
     const [isApplying, setIsApplying] = useState(false);
     const [demoJob, setDemoJob] = useState<any>(null);
+    const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
 
     const { data: apiJob, isLoading } = trpc.job.getById.useQuery(
         { id: jobId },
@@ -37,6 +38,17 @@ export default function JobDetails() {
         }
     }, [apiJob, jobId]);
 
+    // Check if user has already applied for this job
+    useEffect(() => {
+        if (user && jobId > 0) {
+            const demoAssignments = JSON.parse(localStorage.getItem("demo-assignments") || "[]");
+            const existingApplication = demoAssignments.find((a: any) => a.jobId === jobId);
+            if (existingApplication) {
+                setApplicationStatus(existingApplication.status);
+            }
+        }
+    }, [user, jobId]);
+
     // Use API job if available, otherwise use demo job
     const job = apiJob || demoJob;
 
@@ -48,6 +60,7 @@ export default function JobDetails() {
         onSuccess: () => {
             toast.success("Application submitted! Waiting for sponsor approval.");
             setIsApplying(false);
+            setApplicationStatus("pending_sponsor_approval");
         },
         onError: (error: unknown) => {
             // Fallback to demo mode
@@ -80,6 +93,7 @@ export default function JobDetails() {
 
         toast.success("Application submitted! Waiting for sponsor approval. (Demo Mode)");
         setIsApplying(false);
+        setApplicationStatus("pending_sponsor_approval");
     };
 
     const handleApply = async () => {
@@ -278,23 +292,48 @@ export default function JobDetails() {
 
                 {/* Apply Button */}
                 {user && (
-                    <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                    <Card className={`border-2 shadow-xl ${applicationStatus
+                            ? 'border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20'
+                            : 'border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
+                        }`}>
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready to apply?</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                        {applicationStatus ? 'Application Status' : 'Ready to apply?'}
+                                    </h3>
                                     <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                        Your sponsor will need to approve this request
+                                        {applicationStatus ? (
+                                            <>
+                                                <Clock className="w-4 h-4 text-orange-600" />
+                                                {applicationStatus === 'pending_sponsor_approval' && 'Waiting for sponsor approval'}
+                                                {applicationStatus === 'approved' && 'Approved by sponsor - awaiting hiring company'}
+                                                {applicationStatus === 'active' && 'Application approved - job active'}
+                                                {applicationStatus === 'declined' && 'Application declined'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                                Your sponsor will need to approve this request
+                                            </>
+                                        )}
                                     </p>
                                 </div>
                                 <Button
                                     size="lg"
                                     onClick={handleApply}
-                                    disabled={isApplying}
-                                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 text-lg px-8"
+                                    disabled={isApplying || !!applicationStatus}
+                                    className={`shadow-lg hover:shadow-xl transition-all duration-300 text-lg px-8 ${applicationStatus
+                                            ? 'bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 cursor-not-allowed opacity-75'
+                                            : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                                        }`}
                                 >
-                                    {isApplying ? "Applying..." : "Apply Now"}
+                                    {isApplying ? "Applying..." :
+                                        applicationStatus === 'pending_sponsor_approval' ? "Pending Sponsor Approval" :
+                                            applicationStatus === 'approved' ? "Pending Hiring Approval" :
+                                                applicationStatus === 'active' ? "Application Active" :
+                                                    applicationStatus === 'declined' ? "Application Declined" :
+                                                        "Apply Now"}
                                 </Button>
                             </div>
                         </CardContent>
