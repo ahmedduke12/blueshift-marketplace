@@ -7,16 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Briefcase, Clock, DollarSign, CheckCircle2, AlertCircle, Calendar, History, Sparkles, TrendingUp, Award } from "lucide-react";
 import { Link } from "wouter";
 import Header from "@/components/Header";
+import { useState, useEffect } from "react";
 
 export default function WorkerDashboard() {
     const { user, loading } = useAuth();
+    const [allAssignments, setAllAssignments] = useState<any[]>([]);
 
     // Fetch worker data
     const { data: worker } = trpc.worker.getProfile.useQuery(undefined, {
         enabled: !!user
     });
 
-    const { data: assignments } = trpc.assignment.list.useQuery(
+    const { data: apiAssignments } = trpc.assignment.list.useQuery(
         { workerId: worker?.id },
         { enabled: !!worker?.id }
     );
@@ -24,6 +26,13 @@ export default function WorkerDashboard() {
     const { data: availableJobs } = trpc.job.list.useQuery({
         status: "active"
     });
+
+    // Merge API assignments with demo assignments from localStorage
+    useEffect(() => {
+        const demoAssignments = JSON.parse(localStorage.getItem("demo-assignments") || "[]");
+        const merged = [...(apiAssignments || []), ...demoAssignments];
+        setAllAssignments(merged);
+    }, [apiAssignments]);
 
     if (loading) {
         return (
@@ -36,15 +45,15 @@ export default function WorkerDashboard() {
         );
     }
 
-    const activeAssignments = assignments?.filter(a => a.status === 'active') || [];
-    const pendingAssignments = assignments?.filter(a => a.status === 'pending_sponsor_approval') || [];
-    const completedAssignments = assignments?.filter(a => a.status === 'completed') || [];
+    const activeAssignments = allAssignments?.filter(a => a.status === 'active') || [];
+    const pendingAssignments = allAssignments?.filter(a => a.status === 'pending_sponsor_approval') || [];
+    const completedAssignments = allAssignments?.filter(a => a.status === 'completed') || [];
 
     const stats = {
         activeJobs: activeAssignments.length,
         pendingApprovals: pendingAssignments.length,
         completedJobs: completedAssignments.length,
-        totalEarnings: assignments?.reduce((sum, a) => sum + (Number(a.wageAmount) || 0), 0) || 0
+        totalEarnings: allAssignments?.reduce((sum, a) => sum + (Number(a.wageAmount) || 0), 0) || 0
     };
 
     return (
@@ -152,9 +161,9 @@ export default function WorkerDashboard() {
                                     <CardDescription>Your latest job assignments</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {assignments && assignments.length > 0 ? (
+                                    {allAssignments && allAssignments.length > 0 ? (
                                         <div className="space-y-3">
-                                            {assignments.slice(0, 5).map((assignment) => (
+                                            {allAssignments.slice(0, 5).map((assignment: any) => (
                                                 <div key={assignment.id} className="flex items-center justify-between p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 hover:shadow-md">
                                                     <div className="flex-1">
                                                         <p className="font-semibold text-gray-900 dark:text-white">Assignment #{assignment.id}</p>
