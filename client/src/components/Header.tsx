@@ -1,5 +1,5 @@
-import { Briefcase } from "lucide-react";
-import { Link } from "wouter";
+import { Briefcase, LogOut } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
@@ -14,6 +14,7 @@ interface HeaderProps {
 
 export default function Header({ userType: propUserType, showNav = true, navItems }: HeaderProps) {
     const [detectedUserType, setDetectedUserType] = useState<"worker" | "company" | undefined>(propUserType);
+    const [, setLocation] = useLocation();
 
     useEffect(() => {
         // If userType is not provided as prop, detect from localStorage
@@ -37,6 +38,11 @@ export default function Header({ userType: propUserType, showNav = true, navItem
     }, [propUserType]);
 
     const userType = detectedUserType;
+
+    const handleLogout = () => {
+        localStorage.removeItem("demo-user");
+        setLocation("/");
+    };
 
     // Determine home link based on user type
     const homeLink = userType === "worker"
@@ -93,6 +99,19 @@ export default function Header({ userType: propUserType, showNav = true, navItem
                                     <Link href={item.href}>{item.label}</Link>
                                 </Button>
                             ))}
+
+                            {/* Sign Out button for logged-in users */}
+                            {userType && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-2"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign Out
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
