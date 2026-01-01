@@ -290,11 +290,11 @@ export default function JobDetails() {
                     </CardContent>
                 </Card>
 
-                {/* Apply Button */}
-                {user && (
+                {/* Apply Button - Only for Workers */}
+                {user && user.userType === 'worker' && (
                     <Card className={`border-2 shadow-xl ${applicationStatus
-                            ? 'border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20'
-                            : 'border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
+                        ? 'border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20'
+                        : 'border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
                         }`}>
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
@@ -324,8 +324,8 @@ export default function JobDetails() {
                                     onClick={handleApply}
                                     disabled={isApplying || !!applicationStatus}
                                     className={`shadow-lg hover:shadow-xl transition-all duration-300 text-lg px-8 ${applicationStatus
-                                            ? 'bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 cursor-not-allowed opacity-75'
-                                            : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                                        ? 'bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 cursor-not-allowed opacity-75'
+                                        : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
                                         }`}
                                 >
                                     {isApplying ? "Applying..." :

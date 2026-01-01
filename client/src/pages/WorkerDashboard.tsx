@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 export default function WorkerDashboard() {
     const { user, loading } = useAuth();
     const [allAssignments, setAllAssignments] = useState<any[]>([]);
+    const [allJobs, setAllJobs] = useState<any[]>([]);
 
     // Fetch worker data
     const { data: worker } = trpc.worker.getProfile.useQuery(undefined, {
@@ -33,6 +34,13 @@ export default function WorkerDashboard() {
         const merged = [...(apiAssignments || []), ...demoAssignments];
         setAllAssignments(merged);
     }, [apiAssignments]);
+
+    // Merge API jobs with demo jobs from localStorage
+    useEffect(() => {
+        const demoJobs = JSON.parse(localStorage.getItem("demo-jobs") || "[]");
+        const merged = [...(availableJobs || []), ...demoJobs];
+        setAllJobs(merged);
+    }, [availableJobs]);
 
     if (loading) {
         return (
@@ -210,9 +218,9 @@ export default function WorkerDashboard() {
                                     <CardDescription>New opportunities for you</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    {availableJobs && availableJobs.length > 0 ? (
+                                    {allJobs && allJobs.length > 0 ? (
                                         <div className="space-y-3">
-                                            {availableJobs.slice(0, 3).map((job) => (
+                                            {allJobs.slice(0, 3).map((job: any) => (
                                                 <div key={job.id} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 hover:shadow-md">
                                                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{job.title}</h3>
                                                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
