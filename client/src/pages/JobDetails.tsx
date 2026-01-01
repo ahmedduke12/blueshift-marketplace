@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -19,11 +19,26 @@ export default function JobDetails() {
     const jobId = params?.id ? parseInt(params.id) : 0;
     const { user } = useAuth();
     const [isApplying, setIsApplying] = useState(false);
+    const [demoJob, setDemoJob] = useState<any>(null);
 
-    const { data: job, isLoading } = trpc.job.getById.useQuery(
+    const { data: apiJob, isLoading } = trpc.job.getById.useQuery(
         { id: jobId },
         { enabled: jobId > 0 }
     );
+
+    // Check localStorage for demo jobs
+    useEffect(() => {
+        if (!apiJob && jobId > 0) {
+            const demoJobs = JSON.parse(localStorage.getItem("demo-jobs") || "[]");
+            const foundJob = demoJobs.find((j: any) => j.id === jobId);
+            if (foundJob) {
+                setDemoJob(foundJob);
+            }
+        }
+    }, [apiJob, jobId]);
+
+    // Use API job if available, otherwise use demo job
+    const job = apiJob || demoJob;
 
     const { data: worker } = trpc.worker.getProfile.useQuery(undefined, {
         enabled: !!user
