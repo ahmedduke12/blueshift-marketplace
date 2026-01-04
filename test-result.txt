@@ -1,0 +1,34 @@
+﻿≡ƒöì Testing Supabase Connection...
+
+Γ£à DATABASE_URL found
+≡ƒôÅ Length: 87 characters
+≡ƒöù Host: db.pfjallmztupeirisdhmf.supabase.co
+
+≡ƒöî Connecting to database...
+node : 
+At line:1 char:1
++ node 
+quick-test.mjs 2>&1 
+| Out-File 
+-FilePath 
+test-result.txt 
+-Encodi ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (:Str   
+ ing) [], Remote    
+Exception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+Γ¥î Connection 
+failed!
+Error: getaddrinfo 
+ENOTFOUND db.pfjallm
+ztupeirisdhmf.supaba
+se.co
+
+≡ƒöº DNS failed - check hostname

@@ -36,10 +36,18 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = postgres(process.env.DATABASE_URL);
+      // Serverless-optimized configuration for Netlify
+      const client = postgres(process.env.DATABASE_URL, {
+        max: 1, // Single connection for serverless
+        idle_timeout: 20, // Close idle connections quickly
+        connect_timeout: 10, // 10 second connection timeout
+        ssl: 'require', // Require SSL for Supabase
+        prepare: false, // Disable prepared statements for pgBouncer compatibility
+      });
       _db = drizzle(client);
+      console.log("[Database] Connected successfully");
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.error("[Database] Failed to connect:", error);
       _db = null;
     }
   }
