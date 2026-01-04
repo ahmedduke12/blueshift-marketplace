@@ -7,8 +7,8 @@
 
 [functions]
   directory = "netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["@trpc/server", "express", "drizzle-orm", "postgres"]
+  node_bundler = "nft"
+  included_files = ["server/**", "drizzle/**"]
 
 [[redirects]]
   from = "/api/trpc/*"
