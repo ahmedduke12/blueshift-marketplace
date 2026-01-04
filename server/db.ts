@@ -36,13 +36,20 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      // Serverless-optimized configuration for Netlify
-      const client = postgres(process.env.DATABASE_URL, {
+      // For serverless, use connection pooler if available
+      // Supabase pooler format: postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      const connectionString = process.env.DATABASE_URL;
+
+      // Serverless-optimized configuration
+      const client = postgres(connectionString, {
         max: 1, // Single connection for serverless
         idle_timeout: 20, // Close idle connections quickly
         connect_timeout: 10, // 10 second connection timeout
-        ssl: 'require', // Require SSL for Supabase
+        ssl: false, // Pooler handles SSL
         prepare: false, // Disable prepared statements for pgBouncer compatibility
+        connection: {
+          application_name: 'blueshift-netlify'
+        }
       });
       _db = drizzle(client);
       console.log("[Database] Connected successfully");
