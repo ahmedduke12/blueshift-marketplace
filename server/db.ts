@@ -28,31 +28,31 @@ import {
   InsertCompanyAdmin,
   analyticsSnapshots,
   InsertAnalyticsSnapshot,
-} from "../drizzle/schema";
-import { ENV } from './_core/env';
+} from "../drizzle/schema.js";
+import { ENV } from './_core/env.js';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      // For serverless, use connection pooler if available
-      // Supabase pooler format: postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      // Supabase Transaction Pooler (IPv4 compatible, ideal for serverless)
+      // Format: postgresql://postgres.[ref]:[password]@aws-1-[region].pooler.supabase.com:6543/postgres
       const connectionString = process.env.DATABASE_URL;
 
-      // Serverless-optimized configuration
+      // Pooler-optimized configuration for Netlify serverless functions
       const client = postgres(connectionString, {
-        max: 1, // Single connection for serverless
-        idle_timeout: 20, // Close idle connections quickly
-        connect_timeout: 10, // 10 second connection timeout
-        ssl: false, // Pooler handles SSL
-        prepare: false, // Disable prepared statements for pgBouncer compatibility
+        max: 1,                    // Single connection for serverless
+        idle_timeout: 20,          // Close idle connections quickly (20s)
+        connect_timeout: 10,       // Connection timeout (10s)
+        ssl: false,                // Pooler handles SSL internally
+        prepare: false,            // REQUIRED: Disable prepared statements for pgBouncer/pooler compatibility
         connection: {
           application_name: 'blueshift-netlify'
         }
       });
       _db = drizzle(client);
-      console.log("[Database] Connected successfully");
+      console.log("[Database] Connected successfully via pooler");
     } catch (error) {
       console.error("[Database] Failed to connect:", error);
       _db = null;
