@@ -2,8 +2,8 @@ import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
 import serverless from "serverless-http";
-import { appRouter } from "../../server/routers";
-import { createContext } from "../../server/_core/context";
+import { appRouter } from "../../server/routers.js";
+import { createContext } from "../../server/_core/context.js";
 
 const app = express();
 
