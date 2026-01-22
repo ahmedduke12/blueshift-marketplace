@@ -102,12 +102,24 @@ export default function JobDetails() {
             return;
         }
 
+        if (user.role !== 'worker') {
+             toast.error("Only workers can apply for jobs");
+             return;
+        }
+
+        if (!worker) {
+            toast.error("Please complete your worker profile before applying");
+            // Optionally redirect to profile creation
+            // setLocation("/worker/profile");
+            return;
+        }
+
         setIsApplying(true);
 
-        // Try API first, will fall back to demo mode on error
+        // API call with real worker ID
         createAssignment.mutate({
             jobId: job.id,
-            workerId: 1 // Demo worker ID
+            workerId: worker.id
         });
     };
 

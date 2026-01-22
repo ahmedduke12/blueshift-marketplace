@@ -14,7 +14,21 @@ const sql = postgres(connectionString, {
 
 try {
     console.log('⏳ Connecting to pooler...');
-    const result = await sql`SELECT version(), current_database(), current_user`;
+    const result = await sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+    `;
+    console.log('📊 Tables found:', result.map(r => r.table_name));
+
+    try {
+        const jobs = await sql`SELECT * FROM jobs`;
+        console.log(`📋 Jobs count: ${jobs.length}`);
+        if (jobs.length > 0) console.log('First job:', jobs[0].title);
+    } catch (e) {
+        console.log('⚠️ Could not query jobs table (might not exist yet):', e.message);
+    }
+
 
     console.log('✅ CONNECTION SUCCESSFUL!\n');
     console.log('📊 Database Info:');

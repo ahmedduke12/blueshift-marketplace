@@ -32,10 +32,39 @@ export default function ApprovalDashboard() {
     const sponsorCompanyId = companies?.[0]?.id;
 
     // Fetch pending approvals
-    const { data: pendingApprovals, refetch } = trpc.approval.getPendingApprovals.useQuery(
+    // Fetch pending approvals
+    const { data: apiApprovals, refetch } = trpc.approval.getPendingApprovals.useQuery(
         { sponsorCompanyId: sponsorCompanyId! },
         { enabled: !!sponsorCompanyId }
     );
+
+    // Merge with demo assignments from localStorage
+    const [demoApprovals, setDemoApprovals] = useState<any[]>([]);
+
+    useState(() => {
+        // Load demo assignments on mount
+        const loadDemoAssignments = () => {
+            const demoAssignments = JSON.parse(localStorage.getItem("demo-assignments") || "[]");
+            const pendingDemo = demoAssignments.filter((a: any) => a.status === 'pending_sponsor_approval');
+
+            // Map to approval format expected by UI
+            const mappedDemo = pendingDemo.map((a: any) => ({
+                id: `demo-${a.id}`,
+                assignmentId: a.id,
+                sponsorCompanyId: 0, // Demo ID
+                createdAt: new Date().toISOString(),
+                isDemo: true, // Flag to identify demo items
+                ...a
+            }));
+            setDemoApprovals(mappedDemo);
+        };
+        loadDemoAssignments();
+        // Listen for storage events to update real-time
+        window.addEventListener('storage', loadDemoAssignments);
+        return () => window.removeEventListener('storage', loadDemoAssignments);
+    });
+
+    const pendingApprovals = [...(apiApprovals || []), ...demoApprovals];
 
     const approveAssignment = trpc.approval.approve.useMutation({
         onSuccess: () => {
@@ -61,14 +90,64 @@ export default function ApprovalDashboard() {
         }
     });
 
-    const handleApprove = (assignmentId: number) => {
+    const handleApprove = (assignmentId: number, isDemo?: boolean) => {
+        if (isDemo) {
+            // Handle Demo Approval
+            const demoAssignments = JSON.parse(localStorage.getItem("demo-assignments") || "[]");
+            const updated = demoAssignments.map((a: any) =>
+                a.id === assignmentId ? { ...a, status: 'active', approvedAt: new Date().toISOString() } : a
+            );
+            localStorage.setItem("demo-assignments", JSON.stringify(updated));
+            toast.success("Demo request approved successfully!");
+            setSelectedRequest(null);
+            setNotes("");
+            // Trigger storage event manually for same-window updates
+            window.dispatchEvent(new Event('storage'));
+            // Force re-read local state since event listener might not catch same-window
+            const pendingDemo = updated.filter((a: any) => a.status === 'pending_sponsor_approval');
+            const mappedDemo = pendingDemo.map((a: any) => ({
+                id: `demo-${a.id}`,
+                assignmentId: a.id,
+                sponsorCompanyId: 0,
+                createdAt: new Date().toISOString(),
+                isDemo: true,
+                ...a
+            }));
+            setDemoApprovals(mappedDemo);
+            return;
+        }
+
         approveAssignment.mutate({
             assignmentId,
             notes: notes || undefined
         });
     };
 
-    const handleDecline = (assignmentId: number) => {
+    const handleDecline = (assignmentId: number, isDemo?: boolean) => {
+        if (isDemo) {
+            // Handle Demo Decline
+            const demoAssignments = JSON.parse(localStorage.getItem("demo-assignments") || "[]");
+            const updated = demoAssignments.map((a: any) =>
+                a.id === assignmentId ? { ...a, status: 'sponsor_declined', declinedAt: new Date().toISOString() } : a
+            );
+            localStorage.setItem("demo-assignments", JSON.stringify(updated));
+            toast.success("Demo request declined");
+            setSelectedRequest(null);
+            setNotes("");
+            // Update local state
+            const pendingDemo = updated.filter((a: any) => a.status === 'pending_sponsor_approval');
+            const mappedDemo = pendingDemo.map((a: any) => ({
+                id: `demo-${a.id}`,
+                assignmentId: a.id,
+                sponsorCompanyId: 0,
+                createdAt: new Date().toISOString(),
+                isDemo: true,
+                ...a
+            }));
+            setDemoApprovals(mappedDemo);
+            return;
+        }
+
         declineAssignment.mutate({
             assignmentId,
             notes: notes || undefined
@@ -206,7 +285,7 @@ export default function ApprovalDashboard() {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Button
-                                                                onClick={() => handleApprove(approval.assignmentId)}
+                                                                onClick={() => handleApprove(approval.assignmentId, approval.isDemo)}
                                                                 className="flex-1"
                                                                 disabled={approveAssignment.isPending}
                                                             >
@@ -249,7 +328,7 @@ export default function ApprovalDashboard() {
                                                         <div className="flex gap-2">
                                                             <Button
                                                                 variant="destructive"
-                                                                onClick={() => handleDecline(approval.assignmentId)}
+                                                                onClick={() => handleDecline(approval.assignmentId, approval.isDemo)}
                                                                 className="flex-1"
                                                                 disabled={declineAssignment.isPending}
                                                             >
